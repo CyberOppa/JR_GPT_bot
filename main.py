@@ -2,6 +2,7 @@ from aiogram import Bot, Dispatcher
 import asyncio
 import logging
 from config import BOT_TOKEN
+from handlers import router
 
 
 
@@ -12,6 +13,7 @@ async def main():
         format='%(asctime)s - %(levelname)s - %(message)s')
     bot = Bot(token=BOT_TOKEN)      # Create a bot instance
     dp = Dispatcher()               # Handeln updates, events
+    dp.include_router(router)       # Register handlers
     await dp.start_polling(bot)
 
 
