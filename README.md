@@ -1,172 +1,229 @@
 # JR_GPT_bot
 
-Telegram bot built with `aiogram` and OpenAI API integration.  
-The project provides multiple chat modes and runs in polling mode.
+A comprehensive, multi-functional Telegram bot built with **Python 3.11+**, **aiogram 3**, and **OpenAI API**.
+This bot serves as a playground for various AI interactions, including role-playing, document analysis (RAG), quizzes, and YouTube video summarization.
 
-## Features
+---
 
-Implemented commands:
+## 🇬🇧 English Description
 
-- `/start`: greeting + inline main menu
-- `/help`: command list
-- `/random`: random science fact via OpenAI
-- `/gpt`: GPT chat with context (FSM-based)
-- `/talk`: role-play chat with selected person
-- `/quiz`: topic-based quiz with answer evaluation
-- `/rag`: ask questions over uploaded text/PDF or pasted text
-- `/yt`: summarize a YouTube video transcript (fixed 3 min read, with language selection) + read aloud
+### Features
 
-Security and performance hardening:
+The bot runs in polling mode and supports the following commands:
 
-- Input/output hardening for Telegram (`HTML` escaping where needed, long text chunking)
-- Per-user rate limits for expensive flows (`/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`, TTS)
-- OpenAI request timeout + retry/backoff for transient failures
-- **Fixed TTS timeout issue by providing a longer timeout for TTS requests.**
-- Global concurrency guard for OpenAI requests to avoid overload spikes
-- RAG source limits:
-- Max upload size: `5 MB`
-- Max stored source text: `120000` chars
-- Max stored RAG chunks: `220`
-- Max injected context per answer: `12000` chars
-- PDF extraction in background thread (non-blocking event loop)
-- YouTube link parsing with stricter video-id validation and transcript caching
+*   **/start**: Initializes the bot and shows the main menu.
+*   **/help**: Lists all available commands.
+*   **/random**: Generates a random scientific fact using GPT, illustrated with a photo.
+*   **/gpt**: Starts a context-aware chat session with ChatGPT (similar to the web interface).
+*   **/talk**: Role-play conversation with famous personas (Elon Musk, Steve Jobs, Albert Einstein, Alexander Pushkin).
+*   **/quiz**: Starts a trivia quiz on various topics (Science, Tech, Movies, etc.) with AI-generated questions and answer validation.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)** mode. Upload PDF/TXT files or paste text to ask questions specifically based on that content.
+*   **/yt**: **YouTube Summarizer**. Paste a YouTube link to get a structured summary (TL;DR, Key Points) and an optional Text-to-Speech (TTS) reading of the summary.
 
-Current personas in `/talk`:
+### Technical Highlights & Hardening
 
-- Alexander Pushkin
-- Elon Musk
-- Steve Jobs
-- Albert Einstein
+*   **Robust Architecture**: Built with `aiogram` routers and FSM (Finite State Machine) for managing conversation states.
+*   **OpenAI Integration**:
+    *   Uses `gpt-4o-mini` for cost-effective and fast responses.
+    *   **Reliability**: Implemented retry logic with exponential backoff for API errors.
+    *   **Concurrency Control**: Semaphore limits parallel requests to prevent API rate limiting.
+    *   **TTS Fix**: Custom timeout (60s) for Text-to-Speech to handle long generation times.
+*   **RAG System**:
+    *   Supports `.pdf`, `.txt`, `.md`, and Python files.
+    *   Smart chunking algorithm with overlap.
+    *   Background processing for PDF extraction.
+    *   Expanded character support (including German/Russian) for tokenization.
+*   **YouTube Tools**:
+    *   Multi-strategy transcript fetching (Static API, List API, and fallback methods) to ensure transcripts are retrieved even if the library behaves inconsistently.
+    *   Strict video ID validation.
 
-## Project Structure
+### Project Structure
 
 ```text
 JR_GPT_bot/
-|- main.py                    # Entry point, starts polling
-|- config.py                  # Loads and validates BOT_TOKEN / OPENAI_API_KEY
-|- requirements               # Python dependencies
-|- handlers/
-|  |- __init__.py             # Aggregates all handler routers
-|  |- commands_handler.py     # /start, /help, menu callbacks
-|  |- random_fact.py          # /random + repeat/stop
-|  |- gpt_chat.py             # /gpt + stateful conversation
-|  |- talk.py                 # /talk + persona selection + dialogue
-|  |- quiz.py                 # /quiz + topic selection + Q/A flow
-|  |- rag.py                  # /rag + source upload + context Q/A
-|  |- youtube_summary.py      # /yt + transcript summary by read-time
-|- keyboards/
-|  |- inline.py               # Inline keyboards
-|- services/
-|  |- openai_service.py       # OpenAI client + ask_gpt()
-|- states/
-|  |- state.py                # FSM states for GPT/Talk/Quiz/RAG/YT
-|- utils/
-|  |- chat_locks.py           # Per-chat locking mechanism
-|  |- quiz_generate.py        # Quiz question generation/checking
-|  |- rag_tools.py            # Chunking + retrieval helpers
-|  |- youtube_tools.py        # YouTube URL parsing + transcript fetch
-|- images/
-   |- gpt.jpg
-   |- quiz.png
-   |- random.png
-   |- talk.jpg
+├── main.py                    # Application entry point
+├── config.py                  # Configuration & Validation
+├── handlers/                  # Message handlers (routers)
+│   ├── commands_handler.py    # General commands
+│   ├── gpt_chat.py            # Free chat mode
+│   ├── quiz.py                # Quiz logic
+│   ├── rag.py                 # RAG (Document Q&A)
+│   ├── talk.py                # Persona chat
+│   ├── youtube_summary.py     # YouTube tools
+│   └── ...
+├── services/
+│   └── openai_service.py      # OpenAI wrapper (Chat & TTS)
+├── utils/
+│   ├── youtube_tools.py       # Robust transcript fetcher
+│   ├── rag_tools.py           # Text chunking & retrieval
+│   └── ...
+└── images/                    # Static assets for menus
 ```
 
-## Technical Flow
+### Installation
 
-1. `main.py` initializes `Dispatcher` and starts polling.
-2. Routers from `handlers/__init__.py` are included.
-3. Handlers call `services/openai_service.py -> ask_gpt()` for model responses.
-4. Conversation state is managed per chat with `aiogram` FSM (`states/state.py`).
+1.  **Clone the repository**:
+    ```bash
+    git clone <repo_url>
+    cd JR_GPT_bot
+    ```
 
-## Requirements
+2.  **Create a virtual environment**:
+    ```bash
+    python -m venv .venv
+    # Windows:
+    .\.venv\Scripts\Activate
+    # Linux/Mac:
+    source .venv/bin/activate
+    ```
 
-- Python 3.11+ (recommended)
-- Telegram Bot Token
-- OpenAI API Key
+3.  **Install dependencies**:
+    ```bash
+    pip install -r requirements
+    ```
 
-## Installation
+4.  **Configuration**:
+    Create a `.env` file in the root directory:
+    ```env
+    BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+    OPENAI_API_KEY=sk-proj-...
+    ```
 
-```bash
-python -m venv .venv
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements
-```
-
-## Configuration
-
-Create a `.env` file in project root:
-
-```env
-BOT_TOKEN=your_telegram_bot_token
-OPENAI_API_KEY=your_openai_api_key
-```
-
-`config.py` validates these variables on startup.
-
-## Run
-
-```bash
-python main.py
-```
-
-## Notes
-
-- Configured model: `gpt-4o-mini`
-- `openai_service.py` has no import-time test call side effects
-- Image files in `images/` are required for photo messages
-- OpenAI calls are protected by retries, timeout, and concurrency semaphore
-- Large model responses are split into safe Telegram-sized chunks
-- RAG and YouTube flows include request throttling and safer content handling
+5.  **Run**:
+    ```bash
+    python main.py
+    ```
 
 ---
 
-## Русская версия
+<details>
+<summary><b>🇩🇪 Deutsche Beschreibung (Hier klicken zum Ausklappen)</b></summary>
 
-Телеграм-бот на `aiogram` с интеграцией OpenAI API.
+### Übersicht
 
-Команды:
+Ein multifunktionaler Telegram-Bot, entwickelt mit **Python 3.11+**, **aiogram 3** und der **OpenAI API**.
+Dieser Bot bietet verschiedene KI-Interaktionen, darunter Rollenspiele, Dokumentenanalyse (RAG), Quizze und YouTube-Video-Zusammenfassungen.
 
-- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`
+### Funktionen
 
-Что реализовано:
+*   **/start**: Startet den Bot und zeigt das Hauptmenü.
+*   **/help**: Listet alle verfügbaren Befehle auf.
+*   **/random**: Generiert einen zufälligen wissenschaftlichen Fakt (mit Bild).
+*   **/gpt**: Startet einen Chat mit ChatGPT, der den Kontext des Gesprächs behält.
+*   **/talk**: Rollenspiel-Modus mit Persönlichkeiten (Elon Musk, Steve Jobs, Albert Einstein, Alexander Puschkin).
+*   **/quiz**: Themenbezogenes Quiz (Wissenschaft, Technik, Filme etc.) mit KI-generierten Fragen und Bewertung.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Laden Sie PDF/TXT-Dateien hoch oder fügen Sie Text ein, um Fragen basierend auf diesem Inhalt zu stellen.
+*   **/yt**: **YouTube-Zusammenfassung**. Senden Sie einen YouTube-Link, um eine strukturierte Zusammenfassung und optional eine Audio-Version (TTS) zu erhalten.
 
-- Режим случайных фактов
-- Контекстный GPT-чат
-- Диалог с персоной
-- Квиз по теме с проверкой ответа
-- RAG-режим: вопросы по загруженному тексту/PDF
-- Краткие summary для YouTube-ссылок (фиксированная длина 3 минуты, с выбором языка) + озвучка
+### Technische Highlights
 
-Ключевые детали:
+*   **Architektur**: Basiert auf `aiogram` Routern und FSM (Finite State Machine) zur Zustandsverwaltung.
+*   **OpenAI Integration**:
+    *   Verwendet `gpt-4o-mini` für schnelle Antworten.
+    *   **Zuverlässigkeit**: Retry-Logik mit exponentiellem Backoff bei API-Fehlern.
+    *   **TTS Fix**: Erhöhtes Timeout (60s) für Text-to-Speech-Anfragen.
+*   **RAG System**:
+    *   Unterstützt `.pdf`, `.txt`, `.md`.
+    *   Intelligentes Text-Chunking mit Überlappung.
+    *   Verbesserte Tokenisierung für deutsche und russische Zeichen.
+*   **YouTube Tools**:
+    *   Robuster Transkript-Abruf mit mehreren Fallback-Strategien, um Fehler der externen Bibliothek abzufangen.
 
-- В `config.py` есть проверка обязательных переменных `.env`
-- `services/openai_service.py` не делает тестовый вызов при импорте
-- Текущая модель: `gpt-4o-mini`
+### Installation
+
+1.  **Repository klonen**:
+    ```bash
+    git clone <repo_url>
+    ```
+
+2.  **Virtuelle Umgebung erstellen**:
+    ```bash
+    python -m venv .venv
+    .\.venv\Scripts\Activate  # Windows
+    ```
+
+3.  **Abhängigkeiten installieren**:
+    ```bash
+    pip install -r requirements
+    ```
+
+4.  **Konfiguration**:
+    Erstellen Sie eine `.env` Datei:
+    ```env
+    BOT_TOKEN=Ihr_Telegram_Token
+    OPENAI_API_KEY=Ihr_OpenAI_Key
+    ```
+
+5.  **Starten**:
+    ```bash
+    python main.py
+    ```
+
+</details>
 
 ---
 
-## Deutsche Version
+<details>
+<summary><b>🇷🇺 Описание на русском (Нажмите, чтобы развернуть)</b></summary>
 
-Telegram-Bot auf Basis von `aiogram` mit OpenAI-API.
+### Обзор
 
-Befehle:
+Многофункциональный Телеграм-бот, написанный на **Python 3.11+** с использованием **aiogram 3** и **OpenAI API**.
+Бот предоставляет различные сценарии использования ИИ: ролевые диалоги, анализ документов (RAG), викторины и саммари YouTube-видео.
 
-- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`
+### Функционал
 
-Umgesetzte Modi:
+*   **/start**: Запуск бота и главное меню.
+*   **/help**: Список команд.
+*   **/random**: Случайный научный факт от GPT с картинкой.
+*   **/gpt**: Чат с ChatGPT с сохранением контекста диалога.
+*   **/talk**: Ролевой чат с известными личностями (Илон Маск, Стив Джобс, Эйнштейн, Пушкин).
+*   **/quiz**: Викторина по темам (Наука, Кино, Технологии) с генерацией вопросов и проверкой ответов через ИИ.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Загрузите PDF/TXT или вставьте текст, чтобы задавать вопросы по конкретному документу.
+*   **/yt**: **Саммари YouTube**. Отправьте ссылку на видео для получения структурированного пересказа и озвучки (TTS).
 
-- Zufallsfakten
-- GPT-Chat mit Kontext
-- Persona-Dialog
-- Themen-Quiz mit Antwortpruefung
-- RAG-Modus: Fragen zu hochgeladenen Texten/PDFs
-- YouTube-Zusammenfassungen (feste Länge 3 Minuten, mit Sprachauswahl) + Vorlesen
+### Технические детали
 
-Wichtige Hinweise:
+*   **Архитектура**: Использование роутеров `aiogram` и FSM для управления состоянием диалогов.
+*   **Интеграция OpenAI**:
+    *   Модель `gpt-4o-mini` для баланса скорости и цены.
+    *   **Надежность**: Система повторных запросов (retries) при ошибках API.
+    *   **TTS**: Увеличенный таймаут (60с) для генерации голоса.
+*   **RAG Система**:
+    *   Поддержка `.pdf`, `.txt`, `.md`.
+    *   Умное разбиение текста на фрагменты (chunking) с перекрытием.
+    *   Улучшенная токенизация для поддержки русского и немецкого языков.
+*   **YouTube Инструменты**:
+    *   Надежный алгоритм получения транскриптов с несколькими стратегиями (Static API, List API, fallback), чтобы избежать сбоев библиотеки.
 
-- `config.py` prueft erforderliche `.env`-Variablen beim Start
-- `services/openai_service.py` fuehrt beim Import keine Testaufrufe aus
-- Aktuelles Modell: `gpt-4o-mini`
+### Установка
+
+1.  **Клонирование репозитория**:
+    ```bash
+    git clone <repo_url>
+    ```
+
+2.  **Создание виртуального окружения**:
+    ```bash
+    python -m venv .venv
+    .\.venv\Scripts\Activate  # Windows
+    ```
+
+3.  **Установка зависимостей**:
+    ```bash
+    pip install -r requirements
+    ```
+
+4.  **Конфигурация**:
+    Создайте файл `.env` в корне проекта:
+    ```env
+    BOT_TOKEN=Ваш_Telegram_Token
+    OPENAI_API_KEY=Ваш_OpenAI_Key
+    ```
+
+5.  **Запуск**:
+    ```bash
+    python main.py
+    ```
+
+</details>
