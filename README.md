@@ -1,17 +1,18 @@
 # JR_GPT_bot
 
 Telegram bot built with `aiogram` and OpenAI API integration.  
-The project provides multiple chat modes (Random Fact, GPT chat, Persona chat) and runs in polling mode.
+The project provides multiple chat modes and runs in polling mode.
 
 ## Features
 
-Implemented:
+Implemented commands:
 
 - `/start`: greeting + inline main menu
 - `/help`: command list
-- `/random`: generates a random science fact via OpenAI
-- `/gpt`: starts a GPT chat with conversation context (FSM-based)
-- `/talk`: starts a role-play chat with a selected person
+- `/random`: random science fact via OpenAI
+- `/gpt`: GPT chat with context (FSM-based)
+- `/talk`: role-play chat with selected person
+- `/quiz`: topic-based quiz with answer evaluation
 
 Current personas in `/talk`:
 
@@ -20,37 +21,37 @@ Current personas in `/talk`:
 - Steve Jobs
 - Albert Einstein
 
-Not implemented yet:
-
-- Quiz logic (`/quiz`): the main menu already contains a quiz button, but there is no quiz handler yet.
-
 ## Project Structure
 
 ```text
 JR_GPT_bot/
-|- main.py                    # Entry point, starts bot polling
-|- config.py                  # Loads BOT_TOKEN and OPENAI_API_KEY from .env
+|- main.py                    # Entry point, starts polling
+|- config.py                  # Loads and validates BOT_TOKEN / OPENAI_API_KEY
 |- requirements               # Python dependencies
 |- handlers/
 |  |- commands_handler.py     # /start, /help, menu callbacks
 |  |- random_fact.py          # /random + repeat/stop
 |  |- gpt_chat.py             # /gpt + stateful conversation
 |  |- talk.py                 # /talk + persona selection + dialogue
+|  |- quiz.py                 # /quiz + topic selection + Q/A flow
 |- keyboards/
 |  |- inline.py               # Inline keyboards
 |- services/
 |  |- openai_service.py       # OpenAI client + ask_gpt()
 |- states/
-|  |- state.py                # FSM states for GPT/Talk modes
+|  |- state.py                # FSM states for GPT/Talk/Quiz
+|- utils/
+|  |- quiz_generate.py        # Quiz question generation/checking
 |- images/
    |- gpt.jpg
+   |- quiz.png
    |- random.png
    |- talk.jpg
 ```
 
 ## Technical Flow
 
-1. `main.py` initializes `Bot` and `Dispatcher`.
+1. `main.py` initializes `Dispatcher` and starts polling.
 2. Routers from `handlers/__init__.py` are included.
 3. Handlers call `services/openai_service.py -> ask_gpt()` for model responses.
 4. Conversation state is managed per chat with `aiogram` FSM (`states/state.py`).
@@ -73,14 +74,14 @@ pip install -r requirements
 
 ## Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in project root:
 
 ```env
 BOT_TOKEN=your_telegram_bot_token
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-`config.py` loads these values via `python-dotenv`.
+`config.py` validates these variables on startup.
 
 ## Run
 
@@ -88,219 +89,54 @@ OPENAI_API_KEY=your_openai_api_key
 python main.py
 ```
 
-The bot starts in polling mode.
-
 ## Notes
 
-- `services/openai_service.py` currently has a direct test call at the end (`asyncio.run(main())`).
-  Because of that, importing this module triggers an OpenAI request.
-- The currently configured model is `gpt-4o-mini`.
-- Image files in `images/` are required for photo messages.
+- Configured model: `gpt-4o-mini`
+- `openai_service.py` has no import-time test call side effects
+- Image files in `images/` are required for photo messages
 
-<details>
-<summary>Русская версия (нажмите, чтобы раскрыть)</summary>
+---
 
-## JR_GPT_bot
+## Русская версия
 
-Телеграм-бот на `aiogram` с интеграцией OpenAI API.  
-Проект включает несколько режимов общения (Random Fact, GPT-чат, диалог с персоной) и запускается в режиме polling.
+Телеграм-бот на `aiogram` с интеграцией OpenAI API.
 
-## Функциональность
+Команды:
 
-Реализовано:
+- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`
 
-- `/start`: приветствие и главное inline-меню
-- `/help`: список команд
-- `/random`: генерация случайного научного факта через OpenAI
-- `/gpt`: чат с GPT с сохранением контекста (FSM)
-- `/talk`: ролевой диалог с выбранной личностью
+Что реализовано:
 
-Персоны в `/talk`:
+- Режим случайных фактов
+- Контекстный GPT-чат
+- Диалог с персоной
+- Квиз по теме с проверкой ответа
 
-- Alexander Pushkin
-- Elon Musk
-- Steve Jobs
-- Albert Einstein
+Ключевые детали:
 
-Пока не реализовано:
+- В `config.py` есть проверка обязательных переменных `.env`
+- `services/openai_service.py` не делает тестовый вызов при импорте
+- Текущая модель: `gpt-4o-mini`
 
-- Логика квиза (`/quiz`): кнопка в меню уже есть, но обработчик пока отсутствует.
+---
 
-## Структура проекта
+## Deutsche Version
 
-```text
-JR_GPT_bot/
-|- main.py                    # Точка входа, запуск polling
-|- config.py                  # Читает BOT_TOKEN и OPENAI_API_KEY из .env
-|- requirements               # Зависимости Python
-|- handlers/
-|  |- commands_handler.py     # /start, /help, callbacks меню
-|  |- random_fact.py          # /random + повтор/выход
-|  |- gpt_chat.py             # /gpt + контекст в состоянии
-|  |- talk.py                 # /talk + выбор персоны + диалог
-|- keyboards/
-|  |- inline.py               # Inline-клавиатуры
-|- services/
-|  |- openai_service.py       # Клиент OpenAI + ask_gpt()
-|- states/
-|  |- state.py                # FSM-состояния для GPT/Talk
-|- images/
-   |- gpt.jpg
-   |- random.png
-   |- talk.jpg
-```
+Telegram-Bot auf Basis von `aiogram` mit OpenAI-API.
 
-## Технический поток
+Befehle:
 
-1. `main.py` инициализирует `Bot` и `Dispatcher`.
-2. Подключаются роутеры из `handlers/__init__.py`.
-3. Обработчики вызывают `services/openai_service.py -> ask_gpt()` для ответов модели.
-4. Состояние диалога хранится по каждому чату через `aiogram` FSM (`states/state.py`).
+- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`
 
-## Требования
+Umgesetzte Modi:
 
-- Python 3.11+ (рекомендуется)
-- Telegram Bot Token
-- OpenAI API Key
+- Zufallsfakten
+- GPT-Chat mit Kontext
+- Persona-Dialog
+- Themen-Quiz mit Antwortpruefung
 
-## Установка
+Wichtige Hinweise:
 
-```bash
-python -m venv .venv
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements
-```
-
-## Конфигурация
-
-Создайте файл `.env` в корне проекта:
-
-```env
-BOT_TOKEN=your_telegram_bot_token
-OPENAI_API_KEY=your_openai_api_key
-```
-
-`config.py` загружает эти значения через `python-dotenv`.
-
-## Запуск
-
-```bash
-python main.py
-```
-
-Бот запускается в режиме polling.
-
-## Примечания
-
-- В `services/openai_service.py` сейчас есть тестовый вызов (`asyncio.run(main())`) в конце файла.
-  Из-за этого импорт модуля сразу отправляет запрос в OpenAI.
-- Текущая модель: `gpt-4o-mini`.
-- Для отправки изображений нужны файлы из `images/`.
-
-</details>
-
-<details>
-<summary>Deutsche Version (zum Aufklappen)</summary>
-
-## JR_GPT_bot
-
-Telegram-Bot auf Basis von `aiogram` mit OpenAI-API-Anbindung.  
-Das Projekt bietet mehrere Modi (Random Fact, GPT-Chat, Persona-Chat) und laeuft im Polling-Modus.
-
-## Funktionen
-
-Implementiert:
-
-- `/start`: Begruessung und Inline-Hauptmenue
-- `/help`: Kommando-Uebersicht
-- `/random`: erzeugt einen zufaelligen Wissenschafts-Fakt ueber OpenAI
-- `/gpt`: startet einen GPT-Chat mit Kontextspeicher (FSM)
-- `/talk`: startet einen Rollenspiel-Chat mit ausgewaehlter Person
-
-Personas in `/talk`:
-
-- Alexander Pushkin
-- Elon Musk
-- Steve Jobs
-- Albert Einstein
-
-Noch nicht implementiert:
-
-- Quiz-Logik (`/quiz`): Ein Quiz-Button ist im Menue vorhanden, aber es gibt noch keinen Handler.
-
-## Projektstruktur
-
-```text
-JR_GPT_bot/
-|- main.py                    # Einstiegspunkt, startet Polling
-|- config.py                  # Laedt BOT_TOKEN und OPENAI_API_KEY aus .env
-|- requirements               # Python-Abhaengigkeiten
-|- handlers/
-|  |- commands_handler.py     # /start, /help, Menue-Callbacks
-|  |- random_fact.py          # /random + Wiederholen/Stop
-|  |- gpt_chat.py             # /gpt + Verlauf im State
-|  |- talk.py                 # /talk + Persona-Auswahl + Dialog
-|- keyboards/
-|  |- inline.py               # Inline-Keyboards
-|- services/
-|  |- openai_service.py       # OpenAI-Client + ask_gpt()
-|- states/
-|  |- state.py                # FSM-States fuer GPT/Talk
-|- images/
-   |- gpt.jpg
-   |- random.png
-   |- talk.jpg
-```
-
-## Technischer Ablauf
-
-1. `main.py` initialisiert `Bot` und `Dispatcher`.
-2. Router aus `handlers/__init__.py` werden eingebunden.
-3. Handler rufen `services/openai_service.py -> ask_gpt()` fuer Modellantworten auf.
-4. Dialogzustand wird pro Chat mit `aiogram` FSM (`states/state.py`) verwaltet.
-
-## Voraussetzungen
-
-- Python 3.11+ (empfohlen)
-- Telegram Bot Token
-- OpenAI API Key
-
-## Installation
-
-```bash
-python -m venv .venv
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements
-```
-
-## Konfiguration
-
-Lege im Projektroot eine `.env`-Datei an:
-
-```env
-BOT_TOKEN=your_telegram_bot_token
-OPENAI_API_KEY=your_openai_api_key
-```
-
-`config.py` laedt diese Werte ueber `python-dotenv`.
-
-## Start
-
-```bash
-python main.py
-```
-
-Der Bot startet im Polling-Modus.
-
-## Hinweise
-
-- In `services/openai_service.py` gibt es aktuell am Dateiende einen Testaufruf (`asyncio.run(main())`).
-  Dadurch wird beim Import des Moduls direkt ein OpenAI-Request ausgeloest.
-- Das aktuell konfigurierte Modell ist `gpt-4o-mini`.
-- Fuer Foto-Nachrichten muessen die Dateien in `images/` vorhanden sein.
-
-</details>
+- `config.py` prueft erforderliche `.env`-Variablen beim Start
+- `services/openai_service.py` fuehrt beim Import keine Testaufrufe aus
+- Aktuelles Modell: `gpt-4o-mini`
