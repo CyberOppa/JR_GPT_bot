@@ -22,7 +22,25 @@ def main_menu():
                     callback_data="talk",
                 )
             ],
-            [InlineKeyboardButton(text="❔ Quiz ❔", callback_data="quiz")]
+            [InlineKeyboardButton(text="❔ Quiz ❔", callback_data="quiz")],
+            [
+                InlineKeyboardButton(
+                    text="🎬 Recommendations 🎬",
+                    callback_data="menu:recommend",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📚 Ask Your Docs 📚",
+                    callback_data="menu:rag",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🎥 YouTube Summary 🎥",
+                    callback_data="menu:yt",
+                )
+            ],
         ]
     )
 
@@ -116,5 +134,100 @@ def after_answer_keyboard() -> InlineKeyboardMarkup:
                 )
             ],
             [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='quiz:stop')]
+        ]
+    )
+
+
+def recommendation_categories_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🎬 Movies',
+                    callback_data='rec:cat:movies',
+                ),
+                InlineKeyboardButton(
+                    text='📚 Books',
+                    callback_data='rec:cat:books',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text='🎵 Music',
+                    callback_data='rec:cat:music',
+                )
+            ],
+            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rec:stop')],
+        ]
+    )
+
+
+def recommendation_actions_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🎲 Another',
+                    callback_data='rec:another',
+                ),
+                InlineKeyboardButton(
+                    text='👎 Not interested',
+                    callback_data='rec:dislike',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text='🔄 Change category',
+                    callback_data='rec:change',
+                )
+            ],
+            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rec:stop')],
+        ]
+    )
+
+
+def rag_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🧹 Clear source',
+                    callback_data='rag:clear',
+                ),
+                InlineKeyboardButton(
+                    text='🔄 New source',
+                    callback_data='rag:change',
+                ),
+            ],
+            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rag:stop')],
+        ]
+    )
+
+
+def yt_length_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='⏱ 2 min',
+                    callback_data='yt:length:2',
+                ),
+                InlineKeyboardButton(
+                    text='⏱ 5 min',
+                    callback_data='yt:length:5',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text='🔗 New link',
+                    callback_data='yt:new',
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text='🛑 Close 🛑',
+                    callback_data='yt:cancel',
+                )
+            ],
         ]
     )

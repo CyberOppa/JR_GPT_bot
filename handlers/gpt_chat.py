@@ -6,7 +6,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, FSInputFile
 
-from keyboards.inline import gpt_keyboard
+from keyboards.inline import gpt_keyboard, main_menu
 from services.openai_service import ask_gpt
 from states.state import GptStates
 
@@ -93,8 +93,10 @@ async def on_gpt_stop(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer('Quit GPT mode')
 
-    try:
-        await callback.message.edit_caption(caption='GPT mode ends')
-    except Exception:
-        if callback.message:
-            await callback.message.edit_text(text='GPT mode ends')
+    if callback.message:
+        user_name = callback.from_user.first_name or "there"
+        await callback.message.answer(
+            f"Hello, {user_name}\n\n"
+            "I'm GPT bot. Choose your destiny!\n\n",
+            reply_markup=main_menu(),
+        )
