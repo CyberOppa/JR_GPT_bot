@@ -14,7 +14,7 @@ Implemented commands:
 - `/talk`: role-play chat with selected person
 - `/quiz`: topic-based quiz with answer evaluation
 - `/rag`: ask questions over uploaded text/PDF or pasted text
-- `/yt`: summarize a YouTube video transcript (2 or 5 min read) + read aloud
+- `/yt`: summarize a YouTube video transcript (fixed 3 min read, with language selection) + read aloud
 
 Security and performance hardening:
 
@@ -135,7 +135,7 @@ python main.py
 - Диалог с персоной
 - Квиз по теме с проверкой ответа
 - RAG-режим: вопросы по загруженному тексту/PDF
-- Краткие summary для YouTube-ссылок (2 или 5 минут чтения) + озвучка
+- Краткие summary для YouTube-ссылок (фиксированная длина 3 минуты, с выбором языка) + озвучка
 
 Ключевые детали:
 
@@ -160,7 +160,7 @@ Umgesetzte Modi:
 - Persona-Dialog
 - Themen-Quiz mit Antwortpruefung
 - RAG-Modus: Fragen zu hochgeladenen Texten/PDFs
-- YouTube-Transcript-Summaries (2 oder 5 Minuten Lesezeit) + Vorlesen
+- YouTube-Zusammenfassungen (feste Länge 3 Minuten, mit Sprachauswahl) + Vorlesen
 
 Wichtige Hinweise:
 

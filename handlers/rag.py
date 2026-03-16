@@ -7,10 +7,10 @@ from aiogram import F, Router
 from aiogram.enums import ChatAction
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, FSInputFile
 from pypdf import PdfReader
 
-from keyboards.inline import main_menu, rag_keyboard
+from keyboards.inline import main_menu, rag_keyboard, rag_cancel_keyboard
 from services.openai_service import ask_gpt
 from states.state import RagStates
 from utils.chat_locks import get_chat_lock
@@ -40,15 +40,30 @@ MAX_RAG_CHUNKS = 220
 async def _open_rag_mode(message: Message, state: FSMContext) -> None:
     await state.set_state(RagStates.awaiting_source)
     await state.update_data(rag_source_name=None, rag_source_chunks=[])
-    await message.answer(
+    
+    caption_text = (
         "RAG mode is active.\n\n"
         "Send one source first:\n"
         "- upload .txt/.md/.pdf file\n"
-        "- paste plain text\n"
-        "- send YouTube link\n\n"
-        "After source is loaded, send questions.",
-        reply_markup=rag_keyboard(),
+        "- paste plain text\n\n"
+        "After source is loaded, send questions."
     )
+
+    try:
+        photo = FSInputFile('images/book.jpg')
+        await message.answer_photo(
+            photo=photo,
+            caption=caption_text,
+            reply_markup=rag_cancel_keyboard(),
+            parse_mode='HTML',
+        )
+    except Exception:
+        logger.exception("RAG image was not sent")
+        await message.answer(
+            caption_text,
+            reply_markup=rag_cancel_keyboard(),
+            parse_mode='HTML',
+        )
 
 
 async def _set_source(
@@ -208,22 +223,21 @@ async def on_rag_document(message: Message, state: FSMContext):
     lock = get_chat_lock(message.chat.id, "rag")
     async with lock:
         parsed = await _extract_text_from_document(message)
+    
     if not parsed:
-        file_name = (
-            message.document.file_name
-            if message.document else "document"
-        )
-        ext = Path(file_name).suffix.lower()
-        if ext not in {".txt", ".md", ".csv", ".json", ".log", ".py", ".pdf"}:
-            await message.answer(
-                "Unsupported file type. Please upload .txt/.md/.csv/.json/"
-                ".log/.py/.pdf"
-            )
+        # _extract_text_from_document already sends an error message if it fails
+        # or if the file type is unsupported. So we just return here.
         return
 
-    source_name, source_text = parsed
+    source_name, source_text = parsed # Unpack the tuple here
+
     async with lock:
-        await _set_source(message, state, source_name, source_text)
+        await _set_source(
+            message,
+            state,
+            source_name=source_name, # Use the unpacked source_name
+            source_text=source_text,
+        )
 
 
 @router.message(RagStates.awaiting_source, F.text)

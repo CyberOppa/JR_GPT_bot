@@ -150,19 +150,36 @@ def rag_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def yt_length_keyboard() -> InlineKeyboardMarkup:
+def yt_lang_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text='⏱ 2 min',
-                    callback_data='yt:length:2',
+                    text='🇬🇧 English',
+                    callback_data='yt:lang:en',
                 ),
                 InlineKeyboardButton(
-                    text='⏱ 5 min',
-                    callback_data='yt:length:5',
+                    text='🇩🇪 German',
+                    callback_data='yt:lang:de',
+                ),
+                InlineKeyboardButton(
+                    text='🇷🇺 Russian',
+                    callback_data='yt:lang:ru',
                 ),
             ],
+            [
+                InlineKeyboardButton(
+                    text='🛑 Close 🛑',
+                    callback_data='yt:cancel',
+                )
+            ],
+        ]
+    )
+
+
+def yt_read_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text='🔗 New link',
@@ -171,7 +188,7 @@ def yt_length_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text='🔊 Read aloud',
+                    text='🔊 Read',
                     callback_data='yt:read',
                 )
             ],
@@ -179,6 +196,51 @@ def yt_length_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text='🛑 Close 🛑',
                     callback_data='yt:cancel',
+                )
+            ],
+        ]
+    )
+
+
+def yt_after_read_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🔗 New link',
+                    callback_data='yt:new',
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text='🛑 Close 🛑',
+                    callback_data='yt:cancel',
+                )
+            ],
+        ]
+    )
+
+
+def yt_cancel_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🛑 Close 🛑',
+                    callback_data='yt:cancel',
+                )
+            ],
+        ]
+    )
+
+
+def rag_cancel_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='🛑 Close 🛑',
+                    callback_data='rag:stop',
                 )
             ],
         ]

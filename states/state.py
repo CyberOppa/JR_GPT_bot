@@ -22,7 +22,7 @@ class RagStates(StatesGroup):
 
 class YouTubeStates(StatesGroup):
     waiting_url = State()
-    choosing_length = State()
+    choosing_lang = State()
 
 
 # Backward compatible alias for old typo.
