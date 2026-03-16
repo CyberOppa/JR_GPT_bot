@@ -9,6 +9,9 @@ from aiogram.types import CallbackQuery, FSInputFile, Message
 from keyboards.inline import main_menu, person_keyboard, talk_keyboard
 from services.openai_service import ask_gpt
 from states.state import TalkStates
+from utils.chat_locks import get_chat_lock
+from utils.rate_limit import get_retry_after
+from utils.telegram_utils import answer_long_text, escape_html
 
 
 router = Router()
@@ -133,7 +136,8 @@ async def on_person_choosen(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.edit_caption(
         caption=(
-            f'{person["emoji"]} <b>You speaks with {person["name"]}</b>\n\n'
+            f'{person["emoji"]} <b>You speaks with '
+            f'{escape_html(person["name"])}</b>\n\n'
             'Type any Questions\n'
         ),
         reply_markup=talk_keyboard(),
@@ -143,39 +147,63 @@ async def on_person_choosen(callback: CallbackQuery, state: FSMContext):
 
 @router.message(TalkStates.chatting, F.text)
 async def cmd_talk_message(message: Message, state: FSMContext):
-    data = await state.get_data()
-    person_key = data.get('person_key')
-    history = data.get('history', [])
-
-    if person_key not in PERSONS:
-        await message.answer('Unknown person')
-        await state.clear()
+    user_id = message.from_user.id if message.from_user else 0
+    retry_after = get_retry_after(
+        user_id=user_id,
+        scope="talk_chat",
+        limit=8,
+        window_seconds=60,
+    )
+    if retry_after:
+        await message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=talk_keyboard(),
+        )
         return
 
-    person = PERSONS[person_key]
-    await message.bot.send_chat_action(
-        chat_id=message.chat.id,
-        action=ChatAction.TYPING
-    )
+    user_text = (message.text or "").strip()
+    if not user_text:
+        await message.answer(
+            'Send a text message.',
+            reply_markup=talk_keyboard(),
+        )
+        return
 
-    response = await ask_gpt(
-        user_message=message.text,
-        system_prompt=person['prompt'],
-        history=history
-    )
+    lock = get_chat_lock(message.chat.id, "talk")
+    async with lock:
+        data = await state.get_data()
+        person_key = data.get('person_key')
+        history = data.get('history', [])
 
-    history.append({'role': 'user', 'content': message.text})
-    history.append({'role': 'assistant', 'content': response})
+        if person_key not in PERSONS:
+            await message.answer('Unknown person')
+            await state.clear()
+            return
 
-    if len(history) > 16:
-        history = history[-16:]
+        person = PERSONS[person_key]
+        await message.bot.send_chat_action(
+            chat_id=message.chat.id,
+            action=ChatAction.TYPING
+        )
 
-    await state.update_data(history=history)
+        response = await ask_gpt(
+            user_message=user_text,
+            system_prompt=person['prompt'],
+            history=history,
+        )
 
-    await message.answer(
-        f'{person["emoji"]} <b>{person["name"]}</b>\n\n{response}',
+        history.append({'role': 'user', 'content': user_text})
+        history.append({'role': 'assistant', 'content': response})
+
+        if len(history) > 16:
+            history = history[-16:]
+
+        await state.update_data(history=history)
+
+    await answer_long_text(
+        message,
+        f'{person["emoji"]} {person["name"]}\n\n{response}',
         reply_markup=talk_keyboard(),
-        parse_mode='HTML',
     )
 
 

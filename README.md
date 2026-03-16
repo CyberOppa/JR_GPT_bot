@@ -16,6 +16,20 @@ Implemented commands:
 - `/rag`: ask questions over uploaded text/PDF or pasted text
 - `/yt`: summarize a YouTube video transcript (2 or 5 min read) + read aloud
 
+Security and performance hardening:
+
+- Input/output hardening for Telegram (`HTML` escaping where needed, long text chunking)
+- Per-user rate limits for expensive flows (`/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`, TTS)
+- OpenAI request timeout + retry/backoff for transient failures
+- Global concurrency guard for OpenAI requests to avoid overload spikes
+- RAG source limits:
+- Max upload size: `5 MB`
+- Max stored source text: `120000` chars
+- Max stored RAG chunks: `220`
+- Max injected context per answer: `12000` chars
+- PDF extraction in background thread (non-blocking event loop)
+- YouTube link parsing with stricter video-id validation and transcript caching
+
 Current personas in `/talk`:
 
 - Alexander Pushkin
@@ -100,6 +114,9 @@ python main.py
 - Configured model: `gpt-4o-mini`
 - `openai_service.py` has no import-time test call side effects
 - Image files in `images/` are required for photo messages
+- OpenAI calls are protected by retries, timeout, and concurrency semaphore
+- Large model responses are split into safe Telegram-sized chunks
+- RAG and YouTube flows include request throttling and safer content handling
 
 ---
 

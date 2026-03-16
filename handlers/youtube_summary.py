@@ -9,6 +9,9 @@ from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from keyboards.inline import main_menu, yt_length_keyboard
 from services.openai_service import ask_gpt, text_to_speech
 from states.state import YouTubeStates
+from utils.chat_locks import get_chat_lock
+from utils.rate_limit import get_retry_after
+from utils.telegram_utils import answer_long_text
 from utils.youtube_tools import extract_first_url, extract_youtube_video_id
 from utils.youtube_tools import fetch_youtube_transcript
 
@@ -27,6 +30,7 @@ async def _open_youtube_mode(message: Message, state: FSMContext) -> None:
     await state.update_data(
         yt_video_id=None,
         yt_url=None,
+        yt_transcript=None,
         yt_last_summary=None,
     )
     await message.answer(
@@ -73,6 +77,7 @@ async def _set_video_from_url(
     await state.update_data(
         yt_video_id=video_id,
         yt_url=url,
+        yt_transcript=None,
         yt_last_summary=None,
     )
     return True
@@ -109,6 +114,7 @@ async def _generate_summary(
     data = await state.get_data()
     video_id = data.get("yt_video_id")
     source_url = data.get("yt_url")
+    transcript = data.get("yt_transcript")
     if not video_id:
         await _open_youtube_mode(message, state)
         return
@@ -118,18 +124,21 @@ async def _generate_summary(
         action=ChatAction.TYPING,
     )
 
-    try:
-        transcript = await fetch_youtube_transcript(video_id)
-    except Exception:
-        logger.exception("Failed to fetch transcript for %s", video_id)
-        await message.answer(
-            "Could not fetch transcript for this video. "
-            "Try another link with subtitles.",
-            reply_markup=yt_length_keyboard(),
-        )
-        return
+    if not transcript:
+        try:
+            transcript = await fetch_youtube_transcript(video_id)
+        except Exception:
+            logger.exception("Failed to fetch transcript for %s", video_id)
+            await message.answer(
+                "Could not fetch transcript for this video. "
+                "Try another link with subtitles.",
+                reply_markup=yt_length_keyboard(),
+            )
+            return
 
-    transcript = _trim_transcript(transcript)
+        transcript = _trim_transcript(transcript)
+        await state.update_data(yt_transcript=transcript)
+
     summary = await ask_gpt(
         user_message=(
             f"Video URL: {source_url}\n"
@@ -145,7 +154,7 @@ async def _generate_summary(
         system_prompt=SUMMARY_SYSTEM_PROMPT,
     )
     await state.update_data(yt_last_summary=summary)
-    await message.answer(summary, reply_markup=yt_length_keyboard())
+    await answer_long_text(message, summary, reply_markup=yt_length_keyboard())
 
 
 @router.message(Command("yt"))
@@ -160,7 +169,22 @@ async def cmd_youtube_summary(message: Message, state: FSMContext):
         return
 
     if minutes in {2, 5}:
-        await _generate_summary(message, state, minutes)
+        retry_after = get_retry_after(
+            user_id=message.from_user.id if message.from_user else 0,
+            scope="yt_summary",
+            limit=5,
+            window_seconds=60,
+        )
+        if retry_after:
+            await message.answer(
+                f"Too many requests. Try again in {retry_after}s.",
+                reply_markup=yt_length_keyboard(),
+            )
+            return
+
+        lock = get_chat_lock(message.chat.id, "youtube")
+        async with lock:
+            await _generate_summary(message, state, minutes)
         return
 
     await message.answer(
@@ -193,6 +217,52 @@ async def on_youtube_url_received(message: Message, state: FSMContext):
     )
 
 
+@router.message(YouTubeStates.choosing_length, F.text)
+async def on_youtube_text_while_choosing(
+    message: Message,
+    state: FSMContext,
+):
+    text = (message.text or "").strip()
+    url = extract_first_url(text)
+    if url:
+        is_valid = await _set_video_from_url(message, state, url)
+        if not is_valid:
+            return
+        await message.answer(
+            "New video accepted. Choose summary length:",
+            reply_markup=yt_length_keyboard(),
+        )
+        return
+
+    if text in {"2", "5"}:
+        minutes = int(text)
+        retry_after = get_retry_after(
+            user_id=message.from_user.id if message.from_user else 0,
+            scope="yt_summary",
+            limit=5,
+            window_seconds=60,
+        )
+        if retry_after:
+            await message.answer(
+                f"Too many requests. Try again in {retry_after}s.",
+                reply_markup=yt_length_keyboard(),
+            )
+            return
+
+        lock = get_chat_lock(message.chat.id, "youtube")
+        async with lock:
+            await _generate_summary(message, state, minutes)
+        return
+
+    await message.answer(
+        (
+            "Use buttons or send `2` / `5`. "
+            "You can also send another YouTube link."
+        ),
+        reply_markup=yt_length_keyboard(),
+    )
+
+
 @router.callback_query(
     YouTubeStates.choosing_length,
     F.data.startswith("yt:length:"),
@@ -207,7 +277,22 @@ async def on_youtube_length(callback: CallbackQuery, state: FSMContext):
     if minutes not in {2, 5}:
         minutes = 2
 
-    await _generate_summary(callback.message, state, minutes)
+    retry_after = get_retry_after(
+        user_id=callback.from_user.id,
+        scope="yt_summary",
+        limit=5,
+        window_seconds=60,
+    )
+    if retry_after:
+        await callback.message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=yt_length_keyboard(),
+        )
+        return
+
+    lock = get_chat_lock(callback.message.chat.id, "youtube")
+    async with lock:
+        await _generate_summary(callback.message, state, minutes)
 
 
 @router.callback_query(F.data == "yt:new")
@@ -223,6 +308,19 @@ async def on_youtube_read_aloud(callback: CallbackQuery, state: FSMContext):
     if not callback.message:
         return
 
+    retry_after = get_retry_after(
+        user_id=callback.from_user.id,
+        scope="yt_tts",
+        limit=4,
+        window_seconds=60,
+    )
+    if retry_after:
+        await callback.message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=yt_length_keyboard(),
+        )
+        return
+
     data = await state.get_data()
     summary = data.get("yt_last_summary")
     if not summary:
@@ -236,7 +334,9 @@ async def on_youtube_read_aloud(callback: CallbackQuery, state: FSMContext):
         chat_id=callback.message.chat.id,
         action=ChatAction.RECORD_VOICE,
     )
-    audio_bytes = await text_to_speech(_trim_for_voice(summary))
+    lock = get_chat_lock(callback.message.chat.id, "youtube")
+    async with lock:
+        audio_bytes = await text_to_speech(_trim_for_voice(summary))
     if not audio_bytes:
         await callback.message.answer(
             "Could not generate voice right now. Try again later.",

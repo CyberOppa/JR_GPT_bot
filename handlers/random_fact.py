@@ -7,6 +7,8 @@ from aiogram.types import CallbackQuery, FSInputFile, Message
 
 from keyboards.inline import main_menu, random_keyboard
 from services.openai_service import ask_gpt
+from utils.rate_limit import get_retry_after
+from utils.telegram_utils import answer_long_text
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -19,6 +21,20 @@ FACT_PROMPT = (
 
 
 async def send_random_fact(message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    retry_after = get_retry_after(
+        user_id=user_id,
+        scope="random_fact",
+        limit=6,
+        window_seconds=60,
+    )
+    if retry_after:
+        await message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=random_keyboard(),
+        )
+        return
+
     await message.bot.send_chat_action(
         chat_id=message.chat.id,
         action=ChatAction.TYPING
@@ -30,17 +46,14 @@ async def send_random_fact(message: Message):
         photo = FSInputFile('images/random.png')
         await message.answer_photo(
             photo=photo,
-            caption=f'<b>Random fact</b>\n\n{fact}',
-            reply_markup=random_keyboard(),
+            caption='<b>Random fact</b>',
             parse_mode='HTML',
         )
+        await answer_long_text(message, fact, reply_markup=random_keyboard())
     except Exception:
         logger.exception('Random fact image was not sent')
-        await message.answer(
-            f'<b>Random fact</b>\n\n{fact}',
-            reply_markup=random_keyboard(),
-            parse_mode='HTML',
-        )
+        await message.answer('<b>Random fact</b>', parse_mode='HTML')
+        await answer_long_text(message, fact, reply_markup=random_keyboard())
 
 
 @router.message(Command('random'))

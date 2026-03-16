@@ -9,6 +9,9 @@ from aiogram.types import CallbackQuery, FSInputFile, Message
 from keyboards.inline import after_answer_keyboard, main_menu, topics_keyboard
 from states.state import QuizStates
 from utils.quiz_generate import check_answer, generate_question
+from utils.chat_locks import get_chat_lock
+from utils.rate_limit import get_retry_after
+from utils.telegram_utils import answer_long_text
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -86,7 +89,8 @@ async def _send_next_question(
     question = await generate_question(topic['prompt_name'])
 
     await state.update_data(topic_key=topic_key, last_question=question)
-    await message.answer(
+    await answer_long_text(
+        message,
         f"{topic['name']}\n\n{question}\n\nSend your answer as text.",
         reply_markup=after_answer_keyboard(),
     )
@@ -115,7 +119,22 @@ async def on_topic_choosen(callback: CallbackQuery, state: FSMContext):
     await state.set_state(QuizStates.answering)
     await callback.answer()
     if callback.message:
-        await _send_next_question(callback.message, state, topic_key)
+        retry_after = get_retry_after(
+            user_id=callback.from_user.id,
+            scope="quiz_generate",
+            limit=10,
+            window_seconds=60,
+        )
+        if retry_after:
+            await callback.message.answer(
+                f"Too many requests. Try again in {retry_after}s.",
+                reply_markup=after_answer_keyboard(),
+            )
+            return
+
+        lock = get_chat_lock(callback.message.chat.id, "quiz")
+        async with lock:
+            await _send_next_question(callback.message, state, topic_key)
 
 
 @router.message(QuizStates.answering, F.text)
@@ -132,8 +151,28 @@ async def on_user_answer(message: Message, state: FSMContext):
         chat_id=message.chat.id,
         action=ChatAction.TYPING,
     )
-    feedback = await check_answer(last_question, message.text)
-    await message.answer(feedback, reply_markup=after_answer_keyboard())
+    retry_after = get_retry_after(
+        user_id=message.from_user.id if message.from_user else 0,
+        scope="quiz_check",
+        limit=12,
+        window_seconds=60,
+    )
+    if retry_after:
+        await message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=after_answer_keyboard(),
+        )
+        return
+
+    lock = get_chat_lock(message.chat.id, "quiz")
+    async with lock:
+        feedback = await check_answer(last_question, message.text)
+
+    await answer_long_text(
+        message,
+        feedback,
+        reply_markup=after_answer_keyboard(),
+    )
 
 
 @router.callback_query(QuizStates.answering, F.data == "quiz:next")
@@ -149,7 +188,22 @@ async def on_next_question(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer()
     if callback.message:
-        await _send_next_question(callback.message, state, topic_key)
+        retry_after = get_retry_after(
+            user_id=callback.from_user.id,
+            scope="quiz_generate",
+            limit=10,
+            window_seconds=60,
+        )
+        if retry_after:
+            await callback.message.answer(
+                f"Too many requests. Try again in {retry_after}s.",
+                reply_markup=after_answer_keyboard(),
+            )
+            return
+
+        lock = get_chat_lock(callback.message.chat.id, "quiz")
+        async with lock:
+            await _send_next_question(callback.message, state, topic_key)
 
 
 @router.callback_query(F.data == "quiz:change_topic")

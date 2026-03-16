@@ -1,34 +1,49 @@
 import asyncio
+import logging
 import re
 from urllib.parse import parse_qs, urlparse
 
 from youtube_transcript_api import YouTubeTranscriptApi
 
+logger = logging.getLogger(__name__)
+_YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def _normalize_video_id(candidate: str | None) -> str | None:
+    if not candidate:
+        return None
+    value = candidate.strip()
+    return value if _YOUTUBE_ID_RE.fullmatch(value) else None
+
 
 def extract_youtube_video_id(url: str) -> str | None:
-    parsed = urlparse(url.strip())
+    parsed = urlparse((url or "").strip())
     host = parsed.netloc.lower().replace("www.", "")
 
     if host == "youtu.be":
         video_id = parsed.path.lstrip("/")
-        return video_id.split("/")[0] if video_id else None
+        short_id = video_id.split("/")[0] if video_id else None
+        return _normalize_video_id(short_id)
 
-    if host in {"youtube.com", "m.youtube.com"}:
+    if host in {"youtube.com", "m.youtube.com", "youtube-nocookie.com"}:
         if parsed.path == "/watch":
-            return parse_qs(parsed.query).get("v", [None])[0]
+            query_video_id = parse_qs(parsed.query).get("v", [None])[0]
+            return _normalize_video_id(query_video_id)
         if parsed.path.startswith("/shorts/"):
-            return parsed.path.split("/")[2]
+            parts = parsed.path.split("/")
+            return _normalize_video_id(parts[2] if len(parts) > 2 else None)
         if parsed.path.startswith("/embed/"):
-            return parsed.path.split("/")[2]
+            parts = parsed.path.split("/")
+            return _normalize_video_id(parts[2] if len(parts) > 2 else None)
 
     return None
 
 
 def extract_first_url(text: str) -> str | None:
-    match = re.search(r"https?://\S+", text)
+    match = re.search(r"https?://[^\s<>]+", text or "")
     if not match:
         return None
-    return match.group(0).strip()
+    return match.group(0).rstrip(").,!?\"'")
 
 
 async def fetch_youtube_transcript(video_id: str) -> str:
@@ -47,8 +62,12 @@ def _fetch_transcript_sync(video_id: str) -> str:
         text = _join_items(items)
         if text:
             return text
-    except Exception:
-        pass
+    except Exception as error:
+        logger.debug(
+            "Legacy transcript fetch failed for %s: %s",
+            video_id,
+            error,
+        )
 
     # youtube-transcript-api newer style with class instance
     api = YouTubeTranscriptApi()
