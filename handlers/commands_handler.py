@@ -15,7 +15,7 @@ async def cmd_start(message: Message):
     user_name = escape_html(message.from_user.first_name or "there")
     await message.answer(
         f"Hello, {user_name}\n\n"
-        "I'm GPT bot. Choose your destiny!\n\n",
+        "I'm GPT bot. Choose your topic!\n\n",
         reply_markup=keyboard,
         parse_mode="HTML",
     )

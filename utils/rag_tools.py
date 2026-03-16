@@ -34,7 +34,9 @@ def split_text_into_chunks(
         if end >= text_length:
             break
 
-        start = max(end - overlap, 0)
+        start = end - overlap
+        if start < 0:
+            start = 0
 
     return chunks
 
@@ -65,4 +67,5 @@ def select_relevant_chunks(
 
 
 def _tokenize(text: str) -> set[str]:
-    return set(re.findall(r"[0-9a-zA-Zа-яА-ЯёЁ]{2,}", text.lower()))
+    # Use \w+ to match words in different languages
+    return set(re.findall(r"\w{2,}", text.lower()))

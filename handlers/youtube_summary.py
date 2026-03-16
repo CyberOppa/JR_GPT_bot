@@ -43,7 +43,7 @@ async def _open_youtube_mode(message: Message, state: FSMContext) -> None:
     )
 
     try:
-        photo = FSInputFile('images/yt.png')
+        photo = FSInputFile('images/yt.jpg')
         await message.answer_photo(
             photo=photo,
             caption=caption_text,

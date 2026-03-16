@@ -3,7 +3,7 @@ import logging
 import re
 from urllib.parse import parse_qs, urlparse
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 
 logger = logging.getLogger(__name__)
 _YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -52,37 +52,59 @@ async def fetch_youtube_transcript(video_id: str) -> str:
 
 def _fetch_transcript_sync(video_id: str) -> str:
     languages = ["en", "en-US", "de", "ru"]
+    errors = []
 
-    # youtube-transcript-api <= 0.6 style
+    # Strategy 1: YouTubeTranscriptApi.get_transcript (Static) - Standard
     try:
         items = YouTubeTranscriptApi.get_transcript(
             video_id,
             languages=languages,
         )
-        text = _join_items(items)
-        if text:
-            return text
-    except Exception as error:
-        logger.debug(
-            "Legacy transcript fetch failed for %s: %s",
-            video_id,
-            error,
-        )
+        return _join_items(items)
+    except AttributeError:
+        # This handles 'type object ... has no attribute get_transcript'
+        pass
+    except Exception as e:
+        errors.append(f"Strategy 1 (static get_transcript) failed: {e}")
 
-    # youtube-transcript-api newer style with class instance
-    api = YouTubeTranscriptApi()
-    if hasattr(api, "fetch"):
-        fetched = api.fetch(video_id, languages=languages)
-        snippets = getattr(fetched, "snippets", fetched)
-        text = _join_items(snippets)
-        if text:
-            return text
+    # Strategy 2: YouTubeTranscriptApi.list_transcripts (Static) - Modern
+    try:
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        # Try to find a manually created transcript in our languages
+        try:
+            transcript = transcript_list.find_transcript(languages)
+            return _join_items(transcript.fetch())
+        except NoTranscriptFound:
+            # Fallback to any generated transcript
+            for transcript in transcript_list:
+                return _join_items(transcript.fetch())
+    except AttributeError:
+        pass
+    except Exception as e:
+        errors.append(f"Strategy 2 (list_transcripts) failed: {e}")
 
+    # Strategy 3: Instance instantiation (Legacy/Alternative) - Restoration of previous code logic
+    try:
+        # Some older or modified versions might use instantiation
+        api = YouTubeTranscriptApi() 
+        if hasattr(api, "get_transcript"):
+             items = api.get_transcript(video_id, languages=languages)
+             return _join_items(items)
+        # Previous code also checked for 'fetch' method on the instance, though unusual
+        if hasattr(api, "fetch"):
+             fetched = api.fetch(video_id, languages=languages)
+             snippets = getattr(fetched, "snippets", fetched)
+             return _join_items(snippets)
+    except Exception as e:
+        errors.append(f"Strategy 3 (instance) failed: {e}")
+
+    logger.error("All transcript fetch strategies failed for %s. Errors: %s", video_id, errors)
     raise RuntimeError("Transcript is unavailable for this video")
 
 
 def _join_items(items) -> str:
     parts: list[str] = []
+    # Items can be a list of dicts or objects
     for item in items:
         text = ""
         if isinstance(item, dict):

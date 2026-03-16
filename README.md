@@ -21,6 +21,7 @@ Security and performance hardening:
 - Input/output hardening for Telegram (`HTML` escaping where needed, long text chunking)
 - Per-user rate limits for expensive flows (`/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`, TTS)
 - OpenAI request timeout + retry/backoff for transient failures
+- **Fixed TTS timeout issue by providing a longer timeout for TTS requests.**
 - Global concurrency guard for OpenAI requests to avoid overload spikes
 - RAG source limits:
 - Max upload size: `5 MB`
@@ -45,6 +46,7 @@ JR_GPT_bot/
 |- config.py                  # Loads and validates BOT_TOKEN / OPENAI_API_KEY
 |- requirements               # Python dependencies
 |- handlers/
+|  |- __init__.py             # Aggregates all handler routers
 |  |- commands_handler.py     # /start, /help, menu callbacks
 |  |- random_fact.py          # /random + repeat/stop
 |  |- gpt_chat.py             # /gpt + stateful conversation
@@ -59,6 +61,7 @@ JR_GPT_bot/
 |- states/
 |  |- state.py                # FSM states for GPT/Talk/Quiz/RAG/YT
 |- utils/
+|  |- chat_locks.py           # Per-chat locking mechanism
 |  |- quiz_generate.py        # Quiz question generation/checking
 |  |- rag_tools.py            # Chunking + retrieval helpers
 |  |- youtube_tools.py        # YouTube URL parsing + transcript fetch

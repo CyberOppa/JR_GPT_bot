@@ -60,7 +60,7 @@ async def _send_topic_menu(message: Message, state: FSMContext) -> None:
     caption = "<b>Quiz</b>\n\nChoose your topic"
 
     try:
-        photo = FSInputFile("images/quiz.png")
+        photo = FSInputFile("images/quiz.jpg")
         await message.answer_photo(
             photo=photo,
             caption=caption,

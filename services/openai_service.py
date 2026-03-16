@@ -19,6 +19,7 @@ TTS_PRIMARY_MODEL = "gpt-4o-mini-tts"
 TTS_FALLBACK_MODEL = "tts-1"
 TTS_DEFAULT_VOICE = "alloy"
 REQUEST_TIMEOUT_SECONDS = 30.0
+TTS_REQUEST_TIMEOUT_SECONDS = 60.0
 MAX_RETRIES = 3
 MAX_PARALLEL_OPENAI_REQUESTS = 6
 MAX_USER_INPUT_CHARS = 24000
@@ -148,6 +149,7 @@ async def text_to_speech(
                     voice=voice,
                     input=payload,
                     response_format="opus",
+                    timeout=TTS_REQUEST_TIMEOUT_SECONDS,
                 )
             ),
         )

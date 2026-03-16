@@ -43,7 +43,7 @@ async def send_random_fact(message: Message):
     fact = await ask_gpt(user_message=FACT_PROMPT)
 
     try:
-        photo = FSInputFile('images/random.png')
+        photo = FSInputFile('images/random.jpg')
         await message.answer_photo(
             photo=photo,
             caption='<b>Random fact</b>',
