@@ -8,6 +8,9 @@ from config import OPENAI_API_KEY
 logger = logging.getLogger(__name__)
 
 MODEL = "gpt-4o-mini"
+TTS_PRIMARY_MODEL = "gpt-4o-mini-tts"
+TTS_FALLBACK_MODEL = "tts-1"
+TTS_DEFAULT_VOICE = "alloy"
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 
@@ -43,3 +46,28 @@ async def ask_gpt(
 
     logger.error("GPT response has no content")
     return "Error: empty response from model"
+
+
+async def text_to_speech(
+    text: str,
+    voice: str = TTS_DEFAULT_VOICE,
+) -> bytes | None:
+    payload = text.strip()
+    if not payload:
+        return None
+
+    for model in (TTS_PRIMARY_MODEL, TTS_FALLBACK_MODEL):
+        try:
+            response = await client.audio.speech.create(
+                model=model,
+                voice=voice,
+                input=payload,
+                response_format="opus",
+            )
+            audio_bytes = await response.aread()
+            if audio_bytes:
+                return audio_bytes
+        except Exception:
+            logger.exception("TTS request failed for model %s", model)
+
+    return None

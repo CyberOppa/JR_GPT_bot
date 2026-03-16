@@ -15,7 +15,7 @@ Implemented commands:
 - `/quiz`: topic-based quiz with answer evaluation
 - `/recommend`: recommendations for movies/books/music
 - `/rag`: ask questions over uploaded text/PDF or pasted text
-- `/yt`: summarize a YouTube video transcript (2 or 5 min read)
+- `/yt`: summarize a YouTube video transcript (2 or 5 min read) + read aloud
 
 Current personas in `/talk`:
 
@@ -121,7 +121,7 @@ python main.py
 - Квиз по теме с проверкой ответа
 - Рекомендации фильмов/книг/музыки с кнопкой "не нравится"
 - RAG-режим: вопросы по загруженному тексту/PDF
-- Краткие summary для YouTube-ссылок (2 или 5 минут чтения)
+- Краткие summary для YouTube-ссылок (2 или 5 минут чтения) + озвучка
 
 Ключевые детали:
 
@@ -147,7 +147,7 @@ Umgesetzte Modi:
 - Themen-Quiz mit Antwortpruefung
 - Empfehlungen fuer Filme/Buecher/Musik mit "Nicht interessiert"
 - RAG-Modus: Fragen zu hochgeladenen Texten/PDFs
-- YouTube-Transcript-Summaries (2 oder 5 Minuten Lesezeit)
+- YouTube-Transcript-Summaries (2 oder 5 Minuten Lesezeit) + Vorlesen
 
 Wichtige Hinweise:
 

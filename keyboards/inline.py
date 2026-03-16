@@ -225,6 +225,12 @@ def yt_length_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text='🔊 Read aloud',
+                    callback_data='yt:read',
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text='🛑 Close 🛑',
                     callback_data='yt:cancel',
                 )

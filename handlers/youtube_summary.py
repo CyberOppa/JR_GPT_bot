@@ -4,10 +4,10 @@ from aiogram import F, Router
 from aiogram.enums import ChatAction
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from keyboards.inline import main_menu, yt_length_keyboard
-from services.openai_service import ask_gpt
+from services.openai_service import ask_gpt, text_to_speech
 from states.state import YouTubeStates
 from utils.youtube_tools import extract_first_url, extract_youtube_video_id
 from utils.youtube_tools import fetch_youtube_transcript
@@ -24,7 +24,11 @@ SUMMARY_SYSTEM_PROMPT = (
 
 async def _open_youtube_mode(message: Message, state: FSMContext) -> None:
     await state.set_state(YouTubeStates.waiting_url)
-    await state.update_data(yt_video_id=None, yt_url=None)
+    await state.update_data(
+        yt_video_id=None,
+        yt_url=None,
+        yt_last_summary=None,
+    )
     await message.answer(
         "YouTube summary mode.\n\n"
         "Send a YouTube link.\n"
@@ -66,7 +70,11 @@ async def _set_video_from_url(
         return False
 
     await state.set_state(YouTubeStates.choosing_length)
-    await state.update_data(yt_video_id=video_id, yt_url=url)
+    await state.update_data(
+        yt_video_id=video_id,
+        yt_url=url,
+        yt_last_summary=None,
+    )
     return True
 
 
@@ -82,6 +90,15 @@ def _trim_transcript(text: str, max_chars: int = 24000) -> str:
 
     half = max_chars // 2
     return f"{text[:half]}\n...\n{text[-half:]}"
+
+
+def _trim_for_voice(text: str, max_chars: int = 4200) -> str:
+    if len(text) <= max_chars:
+        return text
+    return (
+        text[:max_chars]
+        + "\n\n[Voice version trimmed due to length.]"
+    )
 
 
 async def _generate_summary(
@@ -127,6 +144,7 @@ async def _generate_summary(
         ),
         system_prompt=SUMMARY_SYSTEM_PROMPT,
     )
+    await state.update_data(yt_last_summary=summary)
     await message.answer(summary, reply_markup=yt_length_keyboard())
 
 
@@ -197,6 +215,41 @@ async def on_youtube_new_link(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     if callback.message:
         await _open_youtube_mode(callback.message, state)
+
+
+@router.callback_query(F.data == "yt:read")
+async def on_youtube_read_aloud(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    if not callback.message:
+        return
+
+    data = await state.get_data()
+    summary = data.get("yt_last_summary")
+    if not summary:
+        await callback.message.answer(
+            "Generate a summary first, then tap Read aloud.",
+            reply_markup=yt_length_keyboard(),
+        )
+        return
+
+    await callback.message.bot.send_chat_action(
+        chat_id=callback.message.chat.id,
+        action=ChatAction.RECORD_VOICE,
+    )
+    audio_bytes = await text_to_speech(_trim_for_voice(summary))
+    if not audio_bytes:
+        await callback.message.answer(
+            "Could not generate voice right now. Try again later.",
+            reply_markup=yt_length_keyboard(),
+        )
+        return
+
+    voice_file = BufferedInputFile(audio_bytes, filename="yt_summary.ogg")
+    await callback.message.answer_voice(
+        voice=voice_file,
+        caption="🔊 YouTube summary (audio)",
+        reply_markup=yt_length_keyboard(),
+    )
 
 
 @router.callback_query(F.data == "yt:cancel")
