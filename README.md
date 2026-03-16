@@ -13,7 +13,6 @@ Implemented commands:
 - `/gpt`: GPT chat with context (FSM-based)
 - `/talk`: role-play chat with selected person
 - `/quiz`: topic-based quiz with answer evaluation
-- `/recommend`: recommendations for movies/books/music
 - `/rag`: ask questions over uploaded text/PDF or pasted text
 - `/yt`: summarize a YouTube video transcript (2 or 5 min read) + read aloud
 
@@ -37,7 +36,6 @@ JR_GPT_bot/
 |  |- gpt_chat.py             # /gpt + stateful conversation
 |  |- talk.py                 # /talk + persona selection + dialogue
 |  |- quiz.py                 # /quiz + topic selection + Q/A flow
-|  |- recommendations.py      # /recommend + dislike memory + next suggestion
 |  |- rag.py                  # /rag + source upload + context Q/A
 |  |- youtube_summary.py      # /yt + transcript summary by read-time
 |- keyboards/
@@ -45,7 +43,7 @@ JR_GPT_bot/
 |- services/
 |  |- openai_service.py       # OpenAI client + ask_gpt()
 |- states/
-|  |- state.py                # FSM states for GPT/Talk/Quiz/Recommend/RAG/YT
+|  |- state.py                # FSM states for GPT/Talk/Quiz/RAG/YT
 |- utils/
 |  |- quiz_generate.py        # Quiz question generation/checking
 |  |- rag_tools.py            # Chunking + retrieval helpers
@@ -111,7 +109,7 @@ python main.py
 
 Команды:
 
-- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/recommend`, `/rag`, `/yt`
+- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`
 
 Что реализовано:
 
@@ -119,7 +117,6 @@ python main.py
 - Контекстный GPT-чат
 - Диалог с персоной
 - Квиз по теме с проверкой ответа
-- Рекомендации фильмов/книг/музыки с кнопкой "не нравится"
 - RAG-режим: вопросы по загруженному тексту/PDF
 - Краткие summary для YouTube-ссылок (2 или 5 минут чтения) + озвучка
 
@@ -137,7 +134,7 @@ Telegram-Bot auf Basis von `aiogram` mit OpenAI-API.
 
 Befehle:
 
-- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/recommend`, `/rag`, `/yt`
+- `/start`, `/help`, `/random`, `/gpt`, `/talk`, `/quiz`, `/rag`, `/yt`
 
 Umgesetzte Modi:
 
@@ -145,7 +142,6 @@ Umgesetzte Modi:
 - GPT-Chat mit Kontext
 - Persona-Dialog
 - Themen-Quiz mit Antwortpruefung
-- Empfehlungen fuer Filme/Buecher/Musik mit "Nicht interessiert"
 - RAG-Modus: Fragen zu hochgeladenen Texten/PDFs
 - YouTube-Transcript-Summaries (2 oder 5 Minuten Lesezeit) + Vorlesen
 

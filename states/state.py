@@ -15,11 +15,6 @@ class QuizStates(StatesGroup):
     answering = State()
 
 
-class RecommendationStates(StatesGroup):
-    choosing_genre = State()
-    browsing = State()
-
-
 class RagStates(StatesGroup):
     awaiting_source = State()
     chatting = State()

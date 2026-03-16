@@ -25,12 +25,6 @@ def main_menu():
             [InlineKeyboardButton(text="❔ Quiz ❔", callback_data="quiz")],
             [
                 InlineKeyboardButton(
-                    text="🎬 Recommendations 🎬",
-                    callback_data="menu:recommend",
-                )
-            ],
-            [
-                InlineKeyboardButton(
                     text="📚 Ask Your Docs 📚",
                     callback_data="menu:rag",
                 )
@@ -134,54 +128,6 @@ def after_answer_keyboard() -> InlineKeyboardMarkup:
                 )
             ],
             [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='quiz:stop')]
-        ]
-    )
-
-
-def recommendation_categories_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text='🎬 Movies',
-                    callback_data='rec:cat:movies',
-                ),
-                InlineKeyboardButton(
-                    text='📚 Books',
-                    callback_data='rec:cat:books',
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text='🎵 Music',
-                    callback_data='rec:cat:music',
-                )
-            ],
-            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rec:stop')],
-        ]
-    )
-
-
-def recommendation_actions_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text='🎲 Another',
-                    callback_data='rec:another',
-                ),
-                InlineKeyboardButton(
-                    text='👎 Not interested',
-                    callback_data='rec:dislike',
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text='🔄 Change category',
-                    callback_data='rec:change',
-                )
-            ],
-            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rec:stop')],
         ]
     )
 

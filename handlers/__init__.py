@@ -4,7 +4,6 @@ from handlers.random_fact import router as random_fact_router
 from handlers.gpt_chat import router as gpt_chat_router
 from handlers.talk import router as talk_router
 from handlers.quiz import router as quiz_router
-from handlers.recommendations import router as recommendations_router
 from handlers.rag import router as rag_router
 from handlers.youtube_summary import router as youtube_router
 
@@ -17,7 +16,6 @@ router.include_routers(
     gpt_chat_router,
     talk_router,
     quiz_router,
-    recommendations_router,
     rag_router,
     youtube_router,
 )

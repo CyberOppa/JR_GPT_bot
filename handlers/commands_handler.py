@@ -28,7 +28,6 @@ async def cmd_help(message: Message):
         '/gpt - Dialog with GPT\n'
         '/talk - Dialog with a person\n'
         '/quiz - Quiz mode\n'
-        '/recommend - Movies/Books/Music recommendations\n'
         '/rag - Ask your documents\n'
         '/yt - YouTube summary\n'
         '/help - Help\n', parse_mode="HTML"
