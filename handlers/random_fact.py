@@ -1,10 +1,12 @@
 import logging
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, FSInputFile
+
+from aiogram import F, Router
 from aiogram.enums import ChatAction
-from services.openai_service import ask_gpt
+from aiogram.filters import Command
+from aiogram.types import CallbackQuery, FSInputFile, Message
+
 from keyboards.inline import main_menu, random_keyboard
+from services.openai_service import ask_gpt
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -26,11 +28,19 @@ async def send_random_fact(message: Message):
 
     try:
         photo = FSInputFile('images/random.png')
-        await message.answer_photo(photo=photo, caption=f'<b>Random fact</b>\n\n{fact}',
-                                   reply_markup=random_keyboard(), parse_mode='HTML')
-    except Exception as e:
-        logger.error('Foto was not sent')
-        await message.answer(f'<b>Random fact</b>\n\n{fact}',reply_markup=random_keyboard(), parse_mode='HTML')
+        await message.answer_photo(
+            photo=photo,
+            caption=f'<b>Random fact</b>\n\n{fact}',
+            reply_markup=random_keyboard(),
+            parse_mode='HTML',
+        )
+    except Exception:
+        logger.exception('Random fact image was not sent')
+        await message.answer(
+            f'<b>Random fact</b>\n\n{fact}',
+            reply_markup=random_keyboard(),
+            parse_mode='HTML',
+        )
 
 
 @router.message(Command('random'))
@@ -41,10 +51,15 @@ async def cmd_random(message: Message):
 @router.callback_query(F.data == 'random:again')
 async def cmd_random_again(callback: CallbackQuery):
     await callback.answer()
-    await send_random_fact(callback.message)
+    if callback.message:
+        await send_random_fact(callback.message)
 
 
 @router.callback_query(F.data == 'random:stop')
 async def on_random_stop(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.answer('choose your points', reply_markup=main_menu())
+    if callback.message:
+        await callback.message.answer(
+            'Choose your mode.',
+            reply_markup=main_menu(),
+        )

@@ -1,12 +1,14 @@
 import logging
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, FSInputFile
-from aiogram.fsm.context import FSMContext
-from keyboards.inline import gpt_keyboard, main_menu, person_keyboard, talk_keyboard
-from states.state import GptSates, TalkStates
+
+from aiogram import F, Router
 from aiogram.enums import ChatAction
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, FSInputFile, Message
+
+from keyboards.inline import main_menu, person_keyboard, talk_keyboard
 from services.openai_service import ask_gpt
+from states.state import TalkStates
 
 
 router = Router()
@@ -14,49 +16,67 @@ logger = logging.getLogger(__name__)
 
 
 PERSONS = {
-    'Pushkin':{
+    'Pushkin': {
         'name': 'Александр Сергеевич Пушкин',
         'emoji': '🪶',
         'prompt': (
-            "Ты, Александр Сергеевич Пушкин, известный русский поэт конца 19-го века"
-            "Говори изысканно, используй русский язык на подобающем уровне"
-            "Вставляй стихи oder прозу в свою речь"
+            "Ты, Александр Сергеевич Пушкин, "
+            "известный русский поэт конца 19-го века. "
+            "Говори изысканно, используй русский язык "
+            "на подобающем уровне. "
+            "Вставляй стихи oder прозу в свою речь. "
             "Говори исключительно на русском языке"
-            )
+        )
     },
-    'musk':{
+    'musk': {
         'name': 'Elon Musk',
         'emoji': '🚀',
         'prompt': (
             "You are Elon Musk in real-time conversation."
-            "Respond exactly like Elon: concise, witty, sarcastic humor, memes/emojis (🚀😂🐶)"
-            "Use casual slang (dude, bro, btw, lol), bold vision on Mars/Tesla/xAI/AI/free speech, zero fluff, occasional typos." 
-            "Use current real knowledge, tweet-style brevity. Never break character or say you're AI. Start every reply as Elon would text."
+            "Respond exactly like Elon: concise, witty, sarcastic humor, "
+            "memes/emojis (🚀😂🐶). "
+            "Use casual slang (dude, bro, btw, lol), bold vision on "
+            "Mars/Tesla/xAI/AI/free speech, zero fluff, occasional typos. "
+            "Use current real knowledge, tweet-style brevity. "
+            "Never break character or say you're AI. "
+            "Start every reply as Elon would text. "
             "Talk only in English language"
-            )
+        )
     },
-    'jobs':{
+    'jobs': {
         'name': 'Steve Jobs',
         'emoji': '💼',
         'prompt': (
             "You are Steve Jobs in real-time conversation."
-            "Respond exactly like Steve: minimalist, intense, visionary, direct and sometimes abrasive; short powerful sentences, zero fluff, perfectionist tone."
-            "Focus on design, simplicity, innovation, Apple, user experience with phrases like “insanely great” and “think different.”"
-            "Use knowledge from his life and speeches. Never break character or say you're AI. Start every reply as Steve would text."
+            "Respond exactly like Steve: minimalist, intense, visionary, "
+            "direct and sometimes abrasive; short powerful sentences, "
+            "zero fluff, perfectionist tone. "
+            "Focus on design, simplicity, innovation, Apple, user "
+            "experience with phrases like “insanely great” and "
+            "“think different.” "
+            "Use knowledge from his life and speeches. "
+            "Never break character or say you're AI. "
+            "Start every reply as Steve would text. "
             "Talk only in Englisch language"
-            )
+        )
     },
-    'einstein':{
+    'einstein': {
         'name': 'Albert Einstein',
         'emoji': '🧠',
         'prompt': (
             "Du bist Albert Einstein in einem Echtzeit-Gespräch."
-            "Antworte genau wie Einstein: tiefgründige, aber bescheidene Weisheit, sanfter witziger Humor, einfache Analogien für komplexe Ideen, endlose Neugier auf Universum/Wissenschaft/Vorstellungskraft/Frieden."
-            "Verwende Phrasen wie „Imagination ist wichtiger als Wissen“ oder Gedankenexperimente."
-            "Nachdenklicher, gelassener Ton mit gelegentlichem deutschen Flair (z. B. „Ja, mein Freund“)."
-            "Breche niemals den Charakter oder sage, dass du KI bist. Starte jede Antwort so, wie Einstein texten würde."
+            "Antworte genau wie Einstein: tiefgründige, aber bescheidene "
+            "Weisheit, sanfter witziger Humor, einfache Analogien für "
+            "komplexe Ideen, endlose Neugier auf Universum/Wissenschaft/"
+            "Vorstellungskraft/Frieden. "
+            "Verwende Phrasen wie „Imagination ist wichtiger als Wissen“ "
+            "oder Gedankenexperimente. "
+            "Nachdenklicher, gelassener Ton mit gelegentlichem deutschen "
+            "Flair (z. B. „Ja, mein Freund“). "
+            "Breche niemals den Charakter oder sage, dass du KI bist. "
+            "Starte jede Antwort so, wie Einstein texten würde. "
             "Antworte nur auf Deutsch"
-            )
+        )
     }
 }
 
@@ -65,24 +85,35 @@ PERSONS = {
 @router.callback_query(F.data == 'talk')
 async def cmd_talk(event: Message | CallbackQuery, state: FSMContext):
     await state.set_state(TalkStates.choosing_person)
-    
-    # Bestimme, ob es eine Message oder ein Callback ist
+
     message = event if isinstance(event, Message) else event.message
+    if message is None:
+        if isinstance(event, CallbackQuery):
+            await event.answer("Can't open chat from this update")
+        return
 
     try:
         photo = FSInputFile('images/talk.jpg')
-        await message.answer_photo(photo=photo,
-                                   caption=(
-                                       '<b>Dialog with a person</b>\n\nChoose your Speaker:'),
-                                   reply_markup=person_keyboard(PERSONS), parse_mode='HTML')
-    except Exception as e:
-        await message.answer(text='<b>Dialog with a person</b>\n\nChoose your Speaker:', reply_markup=person_keyboard(PERSONS), parse_mode='HTML')
-    
+        await message.answer_photo(
+            photo=photo,
+            caption='<b>Dialog with a person</b>\n\nChoose your Speaker:',
+            reply_markup=person_keyboard(PERSONS),
+            parse_mode='HTML',
+        )
+    except Exception:
+        logger.exception("Talk image was not sent")
+        await message.answer(
+            text='<b>Dialog with a person</b>\n\nChoose your Speaker:',
+            reply_markup=person_keyboard(PERSONS),
+            parse_mode='HTML',
+        )
+
     if isinstance(event, CallbackQuery):
         await event.answer()
 
 
-@router.callback_query(TalkStates.choosing_person, F.data.startswith('talk:person:'))
+@router.callback_query(TalkStates.choosing_person,
+                       F.data.startswith('talk:person:'))
 async def on_person_choosen(callback: CallbackQuery, state: FSMContext):
     person_key = callback.data.split(':')[-1]
 
@@ -97,9 +128,16 @@ async def on_person_choosen(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer(f'Starting conversation with {person["name"]}')
 
+    if callback.message is None:
+        return
+
     await callback.message.edit_caption(
-        caption=(f'{person["emoji"]} <b>You speaks with {person["name"]}</b>\n\n'
-                 'Type any Questions\n'), reply_markup=talk_keyboard(), parse_mode='HTML'
+        caption=(
+            f'{person["emoji"]} <b>You speaks with {person["name"]}</b>\n\n'
+            'Type any Questions\n'
+        ),
+        reply_markup=talk_keyboard(),
+        parse_mode='HTML',
     )
 
 
@@ -134,14 +172,21 @@ async def cmd_talk_message(message: Message, state: FSMContext):
 
     await state.update_data(history=history)
 
-    await message.answer(f'{person["emoji"]} <b>{person["name"]}</b>\n\n{response}',
-                         reply_markup=talk_keyboard(), parse_mode='HTML')
+    await message.answer(
+        f'{person["emoji"]} <b>{person["name"]}</b>\n\n{response}',
+        reply_markup=talk_keyboard(),
+        parse_mode='HTML',
+    )
 
 
 @router.callback_query(F.data == 'talk:stop')
 async def stop_talk(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.answer('Conversation ended.', reply_markup=main_menu())
+    if callback.message:
+        await callback.message.answer(
+            'Conversation ended.',
+            reply_markup=main_menu(),
+        )
     await callback.answer()
 
 

@@ -1,13 +1,14 @@
 import logging
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, FSInputFile
-from aiogram.fsm.context import FSMContext
 
-from keyboards.inline import gpt_keyboard, main_menu
-from states.state import GptSates
+from aiogram import F, Router
 from aiogram.enums import ChatAction
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message, CallbackQuery, FSInputFile
+
+from keyboards.inline import gpt_keyboard
 from services.openai_service import ask_gpt
+from states.state import GptStates
 
 
 router = Router()
@@ -15,34 +16,50 @@ logger = logging.getLogger(__name__)
 
 GPT_SYSTEM_PROMPT = (
     'You are a scientific expert in all areas of science.'
-    'Answer my questions briefly but clearly, including important details for understanding.'
+    'Answer my questions briefly but clearly, including important '
+    'details for understanding.'
     'Your answer should be in the same language as the question.'
 )
 
 
 @router.message(Command('gpt'))
 async def cmd_gpt(message: Message, state: FSMContext):
-    await state.set_state(GptSates.chatting)
+    await state.set_state(GptStates.chatting)
     await state.update_data(history=[])
 
     try:
         photo = FSInputFile('images/gpt.jpg')
-        await message.answer_photo(photo=photo,
-                                   caption=(
-                                       '<b>Chat GPT</b>\n\n'
-                                       'Type any Questions\n'
-                                       'Context dialogue is retained\n'
-                                       'Push <b>Close</b> to quit'
-                                   ), reply_markup=gpt_keyboard(), parse_mode='HTML')
-    except Exception as e:
-        await message.answer('<b>Chat GPT</b>\n\n'
-                             'Type any Questions\n'
-                             'Context dialogue is retained\n'
-                             'Push <b>Close</b> to quit',
-                             reply_markup=gpt_keyboard(), parse_mode='HTML')
+        await message.answer_photo(
+            photo=photo,
+            caption=(
+                '<b>Chat GPT</b>\n\n'
+                'Type any Questions\n'
+                'Context dialogue is retained\n'
+                'Push <b>Close</b> to quit'
+            ),
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML',
+        )
+    except Exception:
+        logger.exception("GPT image was not sent")
+        await message.answer(
+            '<b>Chat GPT</b>\n\n'
+            'Type any Questions\n'
+            'Context dialogue is retained\n'
+            'Push <b>Close</b> to quit',
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML',
+        )
 
 
-@router.message(GptSates.chatting, F.text)
+@router.callback_query(F.data == 'menu:gpt')
+async def on_menu_gpt(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    if callback.message:
+        await cmd_gpt(callback.message, state)
+
+
+@router.message(GptStates.chatting, F.text)
 async def cmd_gpt_message(message: Message, state: FSMContext):
     data = await state.get_data()
     history = data.get('history', [])
@@ -78,5 +95,6 @@ async def on_gpt_stop(callback: CallbackQuery, state: FSMContext):
 
     try:
         await callback.message.edit_caption(caption='GPT mode ends')
-    except Exception as e:
-        await callback.message.edit_text(text='GPT mode ends')
+    except Exception:
+        if callback.message:
+            await callback.message.edit_text(text='GPT mode ends')
