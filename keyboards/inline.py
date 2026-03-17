@@ -137,6 +137,12 @@ def rag_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
+                    text='🔊 Read',
+                    callback_data='rag:read',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text='🧹 Clear source',
                     callback_data='rag:clear',
                 ),

@@ -7,15 +7,15 @@ from aiogram import F, Router
 from aiogram.enums import ChatAction
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, FSInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery, Message, FSInputFile
 from pypdf import PdfReader
 
 from keyboards.inline import main_menu, rag_keyboard, rag_cancel_keyboard
-from services.openai_service import ask_gpt
+from services.openai_service import ask_gpt, text_to_speech
 from states.state import RagStates
 from utils.chat_locks import get_chat_lock
 from utils.rate_limit import get_retry_after
-from utils.rag_tools import select_relevant_chunks, split_text_into_chunks
+from utils.rag_tools import select_relevant_chunks, split_text_into_chunks, fetch_url_content
 from utils.telegram_utils import answer_long_text
 from utils.youtube_tools import extract_first_url, extract_youtube_video_id
 from utils.youtube_tools import fetch_youtube_transcript
@@ -39,7 +39,11 @@ MAX_RAG_CHUNKS = 220
 
 async def _open_rag_mode(message: Message, state: FSMContext) -> None:
     await state.set_state(RagStates.awaiting_source)
-    await state.update_data(rag_source_name=None, rag_source_chunks=[])
+    await state.update_data(
+        rag_source_name=None, 
+        rag_source_chunks=[], 
+        rag_last_answer=None
+    )
     
     caption_text = (
         "RAG mode is active.\n\n"
@@ -186,6 +190,9 @@ async def _answer_with_rag(message: Message, state: FSMContext) -> None:
         ),
         system_prompt=RAG_SYSTEM_PROMPT,
     )
+    # Save the response for possible TTS
+    await state.update_data(rag_last_answer=response)
+    
     await answer_long_text(message, response, reply_markup=rag_keyboard())
 
 
@@ -284,6 +291,31 @@ async def on_rag_source_text(message: Message, state: FSMContext):
             )
         return
 
+    # Check if it is a general URL
+    if url:
+        await message.bot.send_chat_action(
+            chat_id=message.chat.id,
+            action=ChatAction.TYPING,
+        )
+        lock = get_chat_lock(message.chat.id, "rag")
+        
+        async with lock:
+            page_text = await fetch_url_content(url)
+        
+        if page_text:
+            async with lock:
+                await _set_source(
+                    message,
+                    state,
+                    source_name=f"URL: {url}",
+                    source_text=page_text,
+                )
+            return
+        else:
+             # Fallthrough: if failed to fetch, treat as regular text or error
+             await message.answer("Could not fetch text from that URL. Paste text manually if needed.")
+             return
+
     if len(text) < 30:
         await message.answer("Send more source text or upload a file.")
         return
@@ -328,13 +360,75 @@ async def on_rag_change_source(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "rag:clear")
 async def on_rag_clear_source(callback: CallbackQuery, state: FSMContext):
     await state.set_state(RagStates.awaiting_source)
-    await state.update_data(rag_source_name=None, rag_source_chunks=[])
+    await state.update_data(
+        rag_source_name=None, 
+        rag_source_chunks=[], 
+        rag_last_answer=None
+    )
     await callback.answer("Source cleared")
     if callback.message:
         await callback.message.answer(
             "Source cleared. Send a new file/text/link.",
             reply_markup=rag_keyboard(),
         )
+
+
+@router.callback_query(F.data == "rag:read")
+async def on_rag_read_aloud(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    if not callback.message:
+        return
+
+    retry_after = get_retry_after(
+        user_id=callback.from_user.id,
+        scope="rag_tts",
+        limit=4,
+        window_seconds=60,
+    )
+    if retry_after:
+        await callback.message.answer(
+            f"Too many requests. Try again in {retry_after}s.",
+            reply_markup=rag_keyboard(),
+        )
+        return
+
+    data = await state.get_data()
+    last_answer = data.get("rag_last_answer")
+    if not last_answer:
+        await callback.message.answer(
+            "No recent answer to read. Ask a question first.",
+            reply_markup=rag_keyboard(),
+        )
+        return
+
+    processing_message = await callback.message.answer(
+        "🔊 Generating audio...",
+        reply_markup=None 
+    )
+
+    await callback.message.bot.send_chat_action(
+        chat_id=callback.message.chat.id,
+        action=ChatAction.RECORD_VOICE,
+    )
+    lock = get_chat_lock(callback.message.chat.id, "rag")
+    async with lock:
+        audio_bytes = await text_to_speech(last_answer)
+    
+    await processing_message.delete()
+
+    if not audio_bytes:
+        await callback.message.answer(
+            "Could not generate voice right now. Try again later.",
+            reply_markup=rag_keyboard(),
+        )
+        return
+
+    voice_file = BufferedInputFile(audio_bytes, filename="rag_answer.ogg")
+    await callback.message.answer_voice(
+        voice=voice_file,
+        caption="🔊 Answer (audio)",
+        reply_markup=rag_keyboard(),
+    )
 
 
 @router.callback_query(F.data == "rag:stop")

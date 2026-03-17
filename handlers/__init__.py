@@ -1,3 +1,5 @@
+"""Handlers helpers package."""
+
 from aiogram import Router
 from handlers.commands_handler import router as commands_router
 from handlers.random_fact import router as random_fact_router
