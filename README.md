@@ -1,4 +1,5 @@
 # JR_GPT_bot
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/YOUR_USERNAME/JR_GPT_bot/releases/tag/v1.0.0)
 
 A comprehensive, multi-functional Telegram bot built with **Python 3.11+**, **aiogram 3**, and **OpenAI API**.
 This bot serves as a playground for various AI interactions, including role-playing, document analysis (RAG), quizzes, and YouTube video summarization.
@@ -17,7 +18,7 @@ The bot runs in polling mode and supports the following commands:
 *   **/gpt**: Starts a context-aware chat session with ChatGPT (similar to the web interface).
 *   **/talk**: Role-play conversation with famous personas (Elon Musk, Steve Jobs, Albert Einstein, Alexander Pushkin).
 *   **/quiz**: Starts a trivia quiz on various topics (Science, Tech, Movies, etc.) with AI-generated questions and answer validation.
-*   **/rag**: **RAG (Retrieval-Augmented Generation)** mode. Upload PDF/TXT files or paste text to ask questions specifically based on that content.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)** mode. Upload PDF/TXT files, paste text, or send a web link to ask questions based on that content. An audio version of the answer can be requested.
 *   **/yt**: **YouTube Summarizer**. Paste a YouTube link to get a structured summary (TL;DR, Key Points) and an optional Text-to-Speech (TTS) reading of the summary.
 
 ### Technical Highlights & Hardening
@@ -29,9 +30,9 @@ The bot runs in polling mode and supports the following commands:
     *   **Concurrency Control**: Semaphore limits parallel requests to prevent API rate limiting.
     *   **TTS Fix**: Custom timeout (60s) for Text-to-Speech to handle long generation times.
 *   **RAG System**:
-    *   Supports `.pdf`, `.txt`, `.md`, and Python files.
+    *   Supports `.pdf`, `.txt`, `.md`, web links, and Python files.
     *   Smart chunking algorithm with overlap.
-    *   Background processing for PDF extraction.
+    *   Background processing for PDF extraction and web content scraping.
     *   Expanded character support (including German/Russian) for tokenization.
 *   **YouTube Tools**:
     *   Multi-strategy transcript fetching (Static API, List API, and fallback methods) to ensure transcripts are retrieved even if the library behaves inconsistently.
@@ -43,6 +44,7 @@ The bot runs in polling mode and supports the following commands:
 JR_GPT_bot/
 ├── main.py                    # Application entry point
 ├── config.py                  # Configuration & Validation
+├── CHANGELOG.md               # Version history and patch notes
 ├── handlers/                  # Message handlers (routers)
 │   ├── commands_handler.py    # General commands
 │   ├── gpt_chat.py            # Free chat mode
@@ -112,7 +114,7 @@ Dieser Bot bietet verschiedene KI-Interaktionen, darunter Rollenspiele, Dokument
 *   **/gpt**: Startet einen Chat mit ChatGPT, der den Kontext des Gesprächs behält.
 *   **/talk**: Rollenspiel-Modus mit Persönlichkeiten (Elon Musk, Steve Jobs, Albert Einstein, Alexander Puschkin).
 *   **/quiz**: Themenbezogenes Quiz (Wissenschaft, Technik, Filme etc.) mit KI-generierten Fragen und Bewertung.
-*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Laden Sie PDF/TXT-Dateien hoch oder fügen Sie Text ein, um Fragen basierend auf diesem Inhalt zu stellen.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Laden Sie PDF/TXT-Dateien hoch, fügen Sie Text ein oder senden Sie einen Weblink, um Fragen basierend auf diesem Inhalt zu stellen. Eine Audio-Version der Antwort ist verfügbar.
 *   **/yt**: **YouTube-Zusammenfassung**. Senden Sie einen YouTube-Link, um eine strukturierte Zusammenfassung und optional eine Audio-Version (TTS) zu erhalten.
 
 ### Technische Highlights
@@ -123,7 +125,7 @@ Dieser Bot bietet verschiedene KI-Interaktionen, darunter Rollenspiele, Dokument
     *   **Zuverlässigkeit**: Retry-Logik mit exponentiellem Backoff bei API-Fehlern.
     *   **TTS Fix**: Erhöhtes Timeout (60s) für Text-to-Speech-Anfragen.
 *   **RAG System**:
-    *   Unterstützt `.pdf`, `.txt`, `.md`.
+    *   Unterstützt `.pdf`, `.txt`, `.md` und Weblinks.
     *   Intelligentes Text-Chunking mit Überlappung.
     *   Verbesserte Tokenisierung für deutsche und russische Zeichen.
 *   **YouTube Tools**:
@@ -179,7 +181,7 @@ Dieser Bot bietet verschiedene KI-Interaktionen, darunter Rollenspiele, Dokument
 *   **/gpt**: Чат с ChatGPT с сохранением контекста диалога.
 *   **/talk**: Ролевой чат с известными личностями (Илон Маск, Стив Джобс, Эйнштейн, Пушкин).
 *   **/quiz**: Викторина по темам (Наука, Кино, Технологии) с генерацией вопросов и проверкой ответов через ИИ.
-*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Загрузите PDF/TXT или вставьте текст, чтобы задавать вопросы по конкретному документу.
+*   **/rag**: **RAG (Retrieval-Augmented Generation)**. Загрузите PDF/TXT, вставьте текст или отправьте веб-ссылку, чтобы задавать вопросы по документу. Доступна аудио-версия ответа.
 *   **/yt**: **Саммари YouTube**. Отправьте ссылку на видео для получения структурированного пересказа и озвучки (TTS).
 
 ### Технические детали
@@ -190,7 +192,7 @@ Dieser Bot bietet verschiedene KI-Interaktionen, darunter Rollenspiele, Dokument
     *   **Надежность**: Система повторных запросов (retries) при ошибках API.
     *   **TTS**: Увеличенный таймаут (60с) для генерации голоса.
 *   **RAG Система**:
-    *   Поддержка `.pdf`, `.txt`, `.md`.
+    *   Поддержка `.pdf`, `.txt`, `.md` и веб-ссылок.
     *   Умное разбиение текста на фрагменты (chunking) с перекрытием.
     *   Улучшенная токенизация для поддержки русского и немецкого языков.
 *   **YouTube Инструменты**:
