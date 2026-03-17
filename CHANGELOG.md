@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.0.0] - 2024-07-29
+## [1.0.0] - 2026-03-18
 
 ### Added
 - **RAG URL Processing**: The RAG system can now process web links (news, articles, forums) to use as a knowledge source.

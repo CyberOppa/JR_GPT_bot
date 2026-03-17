@@ -1,5 +1,5 @@
 # JR_GPT_bot
-[![Release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/YOUR_USERNAME/JR_GPT_bot/releases/tag/v1.0.0)
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/CyberOppa/JR_GPT_bot/releases/tag/v1.0.0)
 
 A comprehensive, multi-functional Telegram bot built with **Python 3.11+**, **aiogram 3**, and **OpenAI API**.
 This bot serves as a playground for various AI interactions, including role-playing, document analysis (RAG), quizzes, and YouTube video summarization.
