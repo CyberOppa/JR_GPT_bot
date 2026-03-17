@@ -85,8 +85,8 @@ JR_GPT_bot/
 4.  **Configuration**:
     Create a `.env` file in the root directory:
     ```env
-    BOT_TOKEN=
-    OPENAI_API_KEY=
+    BOT_TOKEN='YOUR_TELEGRAM_TOKEN'
+    OPENAI_API_KEY='YOUR_OPENAI_API_KEY'
     ```
 
 5.  **Run**:
