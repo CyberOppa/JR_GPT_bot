@@ -36,10 +36,8 @@ async def _open_youtube_mode(message: Message, state: FSMContext) -> None:
     )
     
     caption_text = (
-        "YouTube summary mode.\n\n"
-        "Send a YouTube link.\n"
-        "You can also use command format:\n"
-        f"/yt {escape_html('<url>')}"
+        "<b>YouTube summary mode</b>\n\n"
+        "Send a YouTube link."
     )
 
     try:
