@@ -132,28 +132,29 @@ def after_answer_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def rag_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text='🔊 Read',
-                    callback_data='rag:read',
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text='🧹 Clear source',
-                    callback_data='rag:clear',
-                ),
-                InlineKeyboardButton(
-                    text='🔄 New source',
-                    callback_data='rag:change',
-                ),
-            ],
-            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rag:stop')],
-        ]
-    )
+def rag_keyboard(show_read: bool = False) -> InlineKeyboardMarkup:
+    buttons = []
+    
+    if show_read:
+        buttons.append([
+            InlineKeyboardButton(
+                text='🔊 Read',
+                callback_data='rag:read',
+            )
+        ])
+    
+    buttons.append([
+        InlineKeyboardButton(
+            text='🔄 New source',
+            callback_data='rag:change',
+        ),
+    ])
+    
+    buttons.append([
+        InlineKeyboardButton(text='🛑 Close 🛑', callback_data='rag:stop')
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def yt_lang_keyboard() -> InlineKeyboardMarkup:

@@ -91,13 +91,14 @@ async def _set_source(
     await state.update_data(
         rag_source_name=source_name,
         rag_source_chunks=chunks,
+        rag_last_answer=None,  # Clear last answer when new source is set
     )
     await state.set_state(RagStates.chatting)
     await message.answer(
         f"Source loaded: {source_name}\n"
         f"Chunks: {len(chunks)}\n\n"
         "Now send your question.",
-        reply_markup=rag_keyboard(),
+        reply_markup=rag_keyboard(show_read=False),
     )
 
 
@@ -193,7 +194,7 @@ async def _answer_with_rag(message: Message, state: FSMContext) -> None:
     # Save the response for possible TTS
     await state.update_data(rag_last_answer=response)
     
-    await answer_long_text(message, response, reply_markup=rag_keyboard())
+    await answer_long_text(message, response, reply_markup=rag_keyboard(show_read=True))
 
 
 @router.message(Command("rag"))
@@ -357,20 +358,7 @@ async def on_rag_change_source(callback: CallbackQuery, state: FSMContext):
         await _open_rag_mode(callback.message, state)
 
 
-@router.callback_query(F.data == "rag:clear")
-async def on_rag_clear_source(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(RagStates.awaiting_source)
-    await state.update_data(
-        rag_source_name=None, 
-        rag_source_chunks=[], 
-        rag_last_answer=None
-    )
-    await callback.answer("Source cleared")
-    if callback.message:
-        await callback.message.answer(
-            "Source cleared. Send a new file/text/link.",
-            reply_markup=rag_keyboard(),
-        )
+# REMOVED "rag:clear" handler to delete the functionality
 
 
 @router.callback_query(F.data == "rag:read")
@@ -388,7 +376,7 @@ async def on_rag_read_aloud(callback: CallbackQuery, state: FSMContext):
     if retry_after:
         await callback.message.answer(
             f"Too many requests. Try again in {retry_after}s.",
-            reply_markup=rag_keyboard(),
+            reply_markup=rag_keyboard(show_read=True),
         )
         return
 
@@ -397,7 +385,7 @@ async def on_rag_read_aloud(callback: CallbackQuery, state: FSMContext):
     if not last_answer:
         await callback.message.answer(
             "No recent answer to read. Ask a question first.",
-            reply_markup=rag_keyboard(),
+            reply_markup=rag_keyboard(show_read=False),
         )
         return
 
@@ -419,7 +407,7 @@ async def on_rag_read_aloud(callback: CallbackQuery, state: FSMContext):
     if not audio_bytes:
         await callback.message.answer(
             "Could not generate voice right now. Try again later.",
-            reply_markup=rag_keyboard(),
+            reply_markup=rag_keyboard(show_read=True),
         )
         return
 
@@ -427,7 +415,8 @@ async def on_rag_read_aloud(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer_voice(
         voice=voice_file,
         caption="🔊 Answer (audio)",
-        reply_markup=rag_keyboard(),
+        # Use False here to hide the "Read" button since it's already audio
+        reply_markup=rag_keyboard(show_read=False),
     )
 
 
