@@ -25,7 +25,7 @@ async def send_random_fact(message: Message):
     fact = await ask_gpt(user_message=FACT_PROMPT)
 
     try:
-        photo = FSInputFile('images/random.png')
+        photo = FSInputFile('images/random.jpg')
         await message.answer_photo(photo=photo, caption=f'<b>Random fact</b>\n\n{fact}',
                                    reply_markup=random_keyboard(), parse_mode='HTML')
     except Exception as e:

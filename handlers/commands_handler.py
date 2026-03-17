@@ -11,7 +11,7 @@ router = Router()
 async def cmd_start(message: Message):
     keyboard = main_menu()
     await message.answer(f"Hello, {message.from_user.first_name}\n\n"
-                         "I'm GPT bot. Choose your destiny!\n\n", reply_markup=keyboard, parse_mode="HTML")
+                         "I'm AI-Powered Chatbot.\nWhat would you like to do?\n\n", reply_markup=keyboard)
 
 
 @router.message(Command("help"))
@@ -22,7 +22,8 @@ async def cmd_help(message: Message):
         '/random - Random fact\n'
         '/gpt - Dialog with GPT\n'
         '/talk - Dialog with a person\n'
-        '/help - Help\n', parse_mode="HTML"
+        '/quiz - Quiz\n'
+        '/help - Help\n'
     )
 
 

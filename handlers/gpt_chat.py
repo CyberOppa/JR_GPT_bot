@@ -20,26 +20,80 @@ GPT_SYSTEM_PROMPT = (
 )
 
 
-@router.message(Command('gpt'))
-async def cmd_gpt(message: Message, state: FSMContext):
+async def _start_gpt_ui(message: Message, state: FSMContext):
+    """Minimal helper to open GPT chat UI and set FSM state."""
     await state.set_state(GptSates.chatting)
     await state.update_data(history=[])
 
     try:
         photo = FSInputFile('images/gpt.jpg')
-        await message.answer_photo(photo=photo,
-                                   caption=(
-                                       '<b>Chat GPT</b>\n\n'
-                                       'Type any Questions\n'
-                                       'Context dialogue is retained\n'
-                                       'Push <b>Close</b> to quit'
-                                   ), reply_markup=gpt_keyboard(), parse_mode='HTML')
-    except Exception as e:
-        await message.answer('<b>Chat GPT</b>\n\n'
-                             'Type any Questions\n'
-                             'Context dialogue is retained\n'
-                             'Push <b>Close</b> to quit',
-                             reply_markup=gpt_keyboard(), parse_mode='HTML')
+        await message.answer_photo(
+            photo=photo,
+            caption=(
+                '<b>Chat GPT</b>\n\n'
+                'Type any Questions\n'
+                'Context dialogue is retained\n'
+                'Push <b>Close</b> to quit'
+            ),
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML'
+        )
+    except Exception:
+        await message.answer(
+            '<b>Chat GPT</b>\n\n'
+            'Type any Questions\n'
+            'Context dialogue is retained\n'
+            'Push <b>Close</b> to quit',
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML'
+        )
+
+
+@router.message(Command('gpt'))
+async def cmd_gpt(message: Message, state: FSMContext):
+    await _start_gpt_ui(message, state)
+
+
+@router.callback_query(F.data == 'menu:gpt')
+async def on_menu_gpt(callback: CallbackQuery, state: FSMContext):
+    # Stop button flash
+    await callback.answer()
+    # Prefer calling the existing /gpt handler so the command flow is identical
+    if callback.message:
+        # Re-use the same Message object and call the command handler directly
+        await cmd_gpt(callback.message, state)
+        return
+
+    # Fallback: if there's no associated message, create the UI and set FSM
+    await state.set_state(GptSates.chatting)
+    await state.update_data(history=[])
+
+    try:
+        photo = FSInputFile('images/gpt.jpg')
+        await callback.bot.send_photo(
+            chat_id=callback.from_user.id,
+            photo=photo,
+            caption=(
+                '<b>Chat GPT</b>\n\n'
+                'Type any Questions\n'
+                'Context dialogue is retained\n'
+                'Push <b>Close</b> to quit'
+            ),
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML'
+        )
+    except Exception:
+        await callback.bot.send_message(
+            chat_id=callback.from_user.id,
+            text=(
+                '<b>Chat GPT</b>\n\n'
+                'Type any Questions\n'
+                'Context dialogue is retained\n'
+                'Push <b>Close</b> to quit'
+            ),
+            reply_markup=gpt_keyboard(),
+            parse_mode='HTML'
+        )
 
 
 @router.message(GptSates.chatting, F.text)
@@ -78,5 +132,5 @@ async def on_gpt_stop(callback: CallbackQuery, state: FSMContext):
 
     try:
         await callback.message.edit_caption(caption='GPT mode ends')
-    except Exception as e:
+    except Exception:
         await callback.message.edit_text(text='GPT mode ends')
