@@ -85,8 +85,8 @@ JR_GPT_bot/
 4.  **Configuration**:
     Create a `.env` file in the root directory:
     ```env
-    BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
-    OPENAI_API_KEY=sk-proj-...
+    BOT_TOKEN=
+    OPENAI_API_KEY=
     ```
 
 5.  **Run**:
