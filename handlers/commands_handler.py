@@ -1,8 +1,8 @@
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
+
 from keyboards.inline import main_menu
-from handlers.random_fact import send_random_fact
 
 router = Router()
 
@@ -25,15 +25,3 @@ async def cmd_help(message: Message):
         '/quiz - Quiz\n'
         '/help - Help\n'
     )
-
-
-@router.callback_query(F.data == 'menu:random')
-async def on_menu_random(callback: CallbackQuery):
-    await callback.answer()     # Buttons flimmern deaktivieren
-    await send_random_fact(callback.message)
-
-
-@router.callback_query(F.data == 'menu:gpt')
-async def on_menu_gpt(callback: CallbackQuery):
-    await callback.answer()  # Buttons flimmern deaktivieren
-    await callback.message.answer('Type /gpt to start ChatGPT')

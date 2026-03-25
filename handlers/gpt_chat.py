@@ -1,14 +1,14 @@
 import logging
+
 from aiogram import Router, F
+from aiogram.enums import ChatAction
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
+from aiogram.types import Message, CallbackQuery, FSInputFile
 
 from keyboards.inline import gpt_keyboard, main_menu
-from states.state import GptSates
-from aiogram.enums import ChatAction
 from services.openai_service import ask_gpt
-
+from states.state import GptSates
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ GPT_SYSTEM_PROMPT = (
 
 
 async def _start_gpt_ui(message: Message, state: FSMContext):
-    """Minimal helper to open GPT chat UI and set FSM state."""
     await state.set_state(GptSates.chatting)
     await state.update_data(history=[])
 
@@ -35,8 +34,7 @@ async def _start_gpt_ui(message: Message, state: FSMContext):
                 'Context dialogue is retained\n'
                 'Push <b>Close</b> to quit'
             ),
-            reply_markup=gpt_keyboard(),
-            parse_mode='HTML'
+            reply_markup=gpt_keyboard()
         )
     except Exception:
         await message.answer(
@@ -44,8 +42,7 @@ async def _start_gpt_ui(message: Message, state: FSMContext):
             'Type any Questions\n'
             'Context dialogue is retained\n'
             'Push <b>Close</b> to quit',
-            reply_markup=gpt_keyboard(),
-            parse_mode='HTML'
+            reply_markup=gpt_keyboard()
         )
 
 
@@ -56,15 +53,12 @@ async def cmd_gpt(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == 'menu:gpt')
 async def on_menu_gpt(callback: CallbackQuery, state: FSMContext):
-    # Stop button flash
     await callback.answer()
-    # Prefer calling the existing /gpt handler so the command flow is identical
+
     if callback.message:
-        # Re-use the same Message object and call the command handler directly
         await cmd_gpt(callback.message, state)
         return
 
-    # Fallback: if there's no associated message, create the UI and set FSM
     await state.set_state(GptSates.chatting)
     await state.update_data(history=[])
 
@@ -79,8 +73,7 @@ async def on_menu_gpt(callback: CallbackQuery, state: FSMContext):
                 'Context dialogue is retained\n'
                 'Push <b>Close</b> to quit'
             ),
-            reply_markup=gpt_keyboard(),
-            parse_mode='HTML'
+            reply_markup=gpt_keyboard()
         )
     except Exception:
         await callback.bot.send_message(
@@ -91,8 +84,7 @@ async def on_menu_gpt(callback: CallbackQuery, state: FSMContext):
                 'Context dialogue is retained\n'
                 'Push <b>Close</b> to quit'
             ),
-            reply_markup=gpt_keyboard(),
-            parse_mode='HTML'
+            reply_markup=gpt_keyboard()
         )
 
 
@@ -134,3 +126,5 @@ async def on_gpt_stop(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_caption(caption='GPT mode ends')
     except Exception:
         await callback.message.edit_text(text='GPT mode ends')
+
+    await callback.message.answer('Choose your points', reply_markup=main_menu())

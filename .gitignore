@@ -215,10 +215,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# ---- Project specific (JR_aiogram) ----
-# Local configuration should never be committed
-/config.py
-
 # OS-specific junk
 .DS_Store
 Thumbs.db

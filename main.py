@@ -1,21 +1,38 @@
-from aiogram import Bot, Dispatcher
 import asyncio
 import logging
+import sys
+
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+
 from config import BOT_TOKEN
 from handlers import router
 
 
-
 async def main():
-    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s')
-    bot = Bot(token=BOT_TOKEN)      # Create a bot instance
-    dp = Dispatcher()               # Handeln updates, events
-    dp.include_router(router)       # Register handlers
+        format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+        stream=sys.stdout,
+        force=True,
+    )
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting bot")
+
+    dp = Dispatcher()
+    dp.include_router(router)
+
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode='HTML')
+    )
+
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Bot stopped manually")

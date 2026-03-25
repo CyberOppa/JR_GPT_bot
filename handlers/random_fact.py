@@ -27,10 +27,10 @@ async def send_random_fact(message: Message):
     try:
         photo = FSInputFile('images/random.jpg')
         await message.answer_photo(photo=photo, caption=f'<b>Random fact</b>\n\n{fact}',
-                                   reply_markup=random_keyboard(), parse_mode='HTML')
+                                   reply_markup=random_keyboard())
     except Exception as e:
         logger.error('Foto was not sent')
-        await message.answer(f'<b>Random fact</b>\n\n{fact}',reply_markup=random_keyboard(), parse_mode='HTML')
+        await message.answer(f'<b>Random fact</b>\n\n{fact}',reply_markup=random_keyboard())
 
 
 @router.message(Command('random'))
@@ -39,6 +39,7 @@ async def cmd_random(message: Message):
 
 
 @router.callback_query(F.data == 'random:again')
+@router.callback_query(F.data == 'menu:random')
 async def cmd_random_again(callback: CallbackQuery):
     await callback.answer()
     await send_random_fact(callback.message)

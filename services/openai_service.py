@@ -35,11 +35,3 @@ async def ask_gpt(
     except Exception as e:
         logger.error(f'GPT error: {e}')
         return 'Error: try again later'
-
-
-async def main():
-    answer = await ask_gpt(user_message='Hello')
-    print(answer)
-
-
-asyncio.run(main())

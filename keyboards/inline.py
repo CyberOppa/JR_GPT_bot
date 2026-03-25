@@ -47,3 +47,32 @@ def talk_keyboard():
             [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='talk:stop')]
         ]
     )
+
+
+def quiz_keyboard(topics: dict) -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text=f'{data["name"]}', callback_data=f'quiz:topic:{key}')]
+        for key, data in topics.items()
+    ]
+    buttons.append(
+        [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='quiz:stop')]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def after_quiz_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='️⏭️ Next question ⏭️', callback_data='quiz:next')],
+            [InlineKeyboardButton(text='🔄️️ Change topic 🔄️', callback_data='quiz:change_topic')],
+            [InlineKeyboardButton(text='🛑 Close 🛑', callback_data='quiz:stop')]
+        ]
+    )
+
+
+def cancel_quiz_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='❌ Cancel ❌', callback_data='quiz:cancel')]
+        ]
+    )
